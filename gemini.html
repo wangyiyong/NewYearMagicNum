@@ -353,7 +353,7 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
             if(count < 0) { clearInterval(itv); startCelebration(); return; }
             createTextParticles(count.toString()); count--;
         }, 1000);
-    }, 2000);
+    }, 5000);
 });
 
 function startCelebration() {
