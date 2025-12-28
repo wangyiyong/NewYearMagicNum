@@ -217,19 +217,36 @@ class Particle {
     }
 }
 
-// --- 2. 粒子倒计时系统 ---
+// --- 2. 粒子倒计时系统（五彩缤纷版）---
 class TextParticle {
     constructor(x, y) {
         this.x = Math.random() * w; this.y = Math.random() * h;
         this.destX = x; this.destY = y;
         this.vx = (Math.random() - 0.5) * 10; this.vy = (Math.random() - 0.5) * 10;
+        // 五彩缤纷的颜色
+        const colors = [
+            '#FFD700', // 金色
+            '#FF6B6B', // 红色
+            '#4ECDC4', // 青色
+            '#A855F7', // 紫色
+            '#FF69B4', // 粉色
+            '#00D9FF', // 蓝色
+            '#FFA500', // 橙色
+            '#50FA7B'  // 绿色
+        ];
+        this.color = colors[Math.floor(Math.random() * colors.length)];
     }
     update() {
         this.x += (this.destX - this.x) * 0.1;
         this.y += (this.destY - this.y) * 0.1;
     }
     draw() {
-        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(this.x, this.y, 1.5, 0, Math.PI*2); ctx.fill();
+        ctx.fillStyle = this.color;
+        ctx.globalCompositeOperation = 'lighter'; // 发光效果
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 1.5, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalCompositeOperation = 'source-over';
     }
 }
 
