@@ -1066,105 +1066,36 @@ class FireworkParticle {
 let fireworks = [];
 const fireworkTypes = ['sphere', 'heart', 'spiral']; // 三种爆炸模式
 
-// --- 红包系统（优化版）---
+// --- 红包系统（简洁版）---
 class RedEnvelope {
     constructor() {
         this.x = random(50, w - 50);
-        this.y = -70;
-        this.w = 50;
-        this.h = 70;
+        this.y = -100;
         this.vy = random(2, 5);
-        this.vx = random(-1, 1);
-        this.rotation = random(-30, 30);
-        this.rotSpeed = random(-3, 3);
         this.dead = false;
-        this.scale = 0;
-        this.targetScale = 1;
-
-        // 预生成颜色，避免每帧重新计算
-        const hue = random(0, 20);
-        const lightness = random(45, 55);
-        this.color = `hsl(${hue}, 80%, ${lightness}%)`;
-        this.darkColor = `hsl(${hue}, 80%, ${lightness - 10}%)`; // 用于边框
-
-        // 预缓存transform（减少重复计算）
-        this._cosRot = 0;
-        this._sinRot = 0;
-        this._updateRotation();
-    }
-
-    _updateRotation() {
-        const rad = this.rotation * Math.PI / 180;
-        this._cosRot = Math.cos(rad);
-        this._sinRot = Math.sin(rad);
     }
 
     update() {
-        // 出现动画 - 使用更快的缩放
-        if (this.scale < this.targetScale) {
-            this.scale += 0.15;
-            if (this.scale > this.targetScale) this.scale = this.targetScale;
-        }
-
         this.y += this.vy;
-        this.x += this.vx;
-        this.rotation += this.rotSpeed;
-
-        // 边界反弹
-        if (this.x < 30 || this.x > w - 30) {
-            this.vx *= -1;
-        }
-
-        if (this.y > h + 80) {
+        if (this.y > h + 100) {
             this.dead = true;
-            return;
-        }
-
-        // 仅在旋转变化时更新
-        if (this.rotSpeed !== 0) {
-            this._updateRotation();
         }
     }
 
     draw() {
-        const hw = this.w / 2 * this.scale;
-        const hh = this.h / 2 * this.scale;
-
-        // 手动计算变换后的矩形顶点，避免ctx.save/restore开销
-        ctx.save();
-        ctx.translate(this.x, this.y);
-
-        // 红包主体（使用简单的矩形，移除shadowBlur）
-        ctx.fillStyle = this.color;
+        ctx.fillStyle = '#d63031';
         ctx.beginPath();
-        ctx.roundRect(-hw, -hh, this.w * this.scale, this.h * this.scale, 5 * this.scale);
+        ctx.roundRect(this.x - 20, this.y - 30, 40, 60, 5);
         ctx.fill();
 
-        // 金色边框
-        ctx.strokeStyle = '#ffd700';
-        ctx.lineWidth = 2 * this.scale;
-        ctx.stroke();
-
-        // 金色封口
         ctx.fillStyle = '#ffd700';
-        ctx.fillRect(-hw, -hh * 0.5, this.w * this.scale, 12 * this.scale);
-
-        // "福"字（只在完全显示时绘制）
-        if (this.scale > 0.8) {
-            ctx.fillStyle = '#ffeb3b';
-            ctx.font = `bold ${24 * this.scale}px serif`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText('福', 0, 10 * this.scale);
-        }
-
-        ctx.restore();
+        ctx.font = '16px serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('福', this.x, this.y + 10);
     }
 
     isClicked(mx, my) {
-        const dx = mx - this.x;
-        const dy = my - this.y;
-        return Math.sqrt(dx*dx + dy*dy) < 50;
+        return Math.abs(mx - this.x) < 30 && Math.abs(my - this.y) < 40;
     }
 }
 
