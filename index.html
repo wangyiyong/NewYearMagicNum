@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 跨年浪漫倒计时</title>
+    <style>
+        /* --- 全局样式 & 字体 --- */
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Noto+Serif+SC:wght@700&display=swap');
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #020010;
+            font-family: 'Montserrat', 'Noto Serif SC', sans-serif;
+        }
+
+        /* 北极光背景 */
+        .aurora-bg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at 50% 100%, #1a0b2e, #000000);
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        /* 北极光效果 */
+        .aurora {
+            position: absolute;
+            width: 200%;
+            height: 100%;
+            top: -50%;
+            left: -50%;
+            background: linear-gradient(
+                45deg,
+                transparent 30%,
+                rgba(0, 255, 128, 0.1) 40%,
+                rgba(0, 200, 255, 0.15) 45%,
+                rgba(128, 0, 255, 0.1) 50%,
+                rgba(255, 0, 128, 0.1) 55%,
+                transparent 60%
+            );
+            animation: aurora-wave 15s ease-in-out infinite;
+            filter: blur(60px);
+            opacity: 0.6;
+        }
+
+        .aurora:nth-child(2) {
+            animation-delay: -7.5s;
+            animation-duration: 20s;
+            background: linear-gradient(
+                -45deg,
+                transparent 30%,
+                rgba(255, 128, 0, 0.1) 40%,
+                rgba(0, 255, 200, 0.15) 45%,
+                rgba(100, 0, 255, 0.1) 50%,
+                transparent 60%
+            );
+        }
+
+        @keyframes aurora-wave {
+            0%, 100% { transform: translate(-30%, -30%) rotate(0deg); }
+            50% { transform: translate(30%, 30%) rotate(180deg); }
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        /* UI 层级 */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            pointer-events: auto;
+        }
+
+        /* --- 阶段一：相机与选择 --- */
+        .camera-container {
+            text-align: center;
+            opacity: 0;
+            transition: opacity 1s;
+        }
+
+        .polaroid-cam {
+            width: 200px;
+            height: 180px;
+            background: #fdfdfd;
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(255,215,0, 0.3);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            cursor: pointer;
+            position: relative;
+            animation: float 3s ease-in-out infinite;
+            transition: transform 0.3s;
+        }
+
+        .polaroid-cam:hover {
+            transform: scale(1.05);
+        }
+
+        .lens {
+            width: 100px;
+            height: 100px;
+            background: #222;
+            border-radius: 50%;
+            border: 5px solid #ccc;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .lens::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 20px;
+            height: 20px;
+            background: rgba(255,255,255,0.4);
+            border-radius: 50%;
+        }
+
+        .flash-btn {
+            width: 30px;
+            height: 30px;
+            background: #ff4757;
+            border-radius: 50%;
+            position: absolute;
+            top: -15px;
+            right: 20px;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 10px rgba(255,71,87,0.5);
+        }
+
+        .cam-text {
+            color: #fff;
+            margin-top: 20px;
+            font-size: 1.2rem;
+            text-shadow: 0 0 10px rgba(255,255,255,0.5);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        /* 拍立得照片展示动画 */
+        .polaroid-photos {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 100;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .polaroid-photo {
+            width: 180px;
+            background: white;
+            padding: 10px 10px 40px 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            transform: scale(0) rotate(-20deg);
+            opacity: 0;
+            animation: polaroid-appear 0.6s ease-out forwards;
+        }
+
+        .polaroid-photo img {
+            width: 100%;
+            height: 150px;
+            object-fit: cover;
+            display: block;
+        }
+
+        @keyframes polaroid-appear {
+            0% {
+                transform: scale(0) rotate(-20deg);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.1) rotate(5deg);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(1) rotate(var(--rotation));
+                opacity: 1;
+            }
+        }
+
+        /* 闪光灯效果 */
+        .flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            opacity: 0;
+            pointer-events: none;
+            z-index: 200;
+            transition: opacity 0.1s;
+        }
+
+        /* --- 阶段三：红包卡片 --- */
+        .card-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            width: 320px;
+            background: linear-gradient(135deg, #fff0f0, #fff5f5);
+            border-radius: 20px;
+            box-shadow: 0 0 50px rgba(255,0,0,0.5);
+            z-index: 50;
+            padding: 25px;
+            text-align: center;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 3px solid #ffd700;
+        }
+
+        .card-modal.show {
+            transform: translate(-50%, -50%) scale(1);
+        }
+
+        .card-img {
+            width: 100%;
+            height: 240px;
+            object-fit: cover;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 5px solid white;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        }
+
+        .card-wish {
+            font-size: 1.2rem;
+            color: #d63031;
+            line-height: 1.8;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+
+        .close-btn {
+            background: linear-gradient(135deg, #ff4757, #ff6b81);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 1rem;
+            box-shadow: 0 5px 15px rgba(255,71,87,0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .close-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255,71,87,0.5);
+        }
+
+        /* --- 彩带效果容器 --- */
+        .confetti-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 40;
+        }
+
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 20px;
+            animation: confetti-fall 3s ease-out forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-15px); }
+        }
+
+        /* 提示文字 */
+        .instruction {
+            position: absolute;
+            bottom: 50px;
+            color: rgba(255,255,255,0.8);
+            font-size: 1rem;
+            text-align: center;
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 30px;
+            backdrop-filter: blur(10px);
+            pointer-events: none;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        }
+
+        /* 手势提示 */
+        .gesture-hint {
+            position: fixed;
+            bottom: 120px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #ffd700;
+            font-size: 0.9rem;
+            text-align: center;
+            opacity: 0.8;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        .gesture-icon {
+            font-size: 2rem;
+            margin-bottom: 5px;
+            animation: gesture-pulse 1.5s ease-in-out infinite;
+        }
+
+        @keyframes gesture-pulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+
+        /* 摄像头预览 */
+        #camera-preview {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 160px;
+            height: 120px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 3px solid #ffd700;
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+            z-index: 25;
+            display: none;
+        }
+
+        #camera-preview video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        #camera-preview.active {
+            display: block;
+        }
+
+        /* 手势状态指示 */
+        .gesture-status {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 25px;
+            background: rgba(0,0,0,0.6);
+            border-radius: 25px;
+            color: white;
+            font-size: 0.9rem;
+            z-index: 25;
+            display: none;
+            backdrop-filter: blur(10px);
+            border: 2px solid #ffd700;
+        }
+
+        .gesture-status.active {
+            display: block;
+        }
+
+        .gesture-status.detected {
+            background: rgba(0,200,0,0.6);
+            border-color: #00ff00;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="aurora-bg">
+        <div class="aurora"></div>
+        <div class="aurora"></div>
+    </div>
+
+    <canvas id="mainCanvas"></canvas>
+    <canvas id="meteorCanvas"></canvas>
+
+    <div class="flash-overlay" id="flash"></div>
+    <div class="confetti-container" id="confettiContainer"></div>
+
+    <!-- 拍立得照片展示容器 -->
+    <div class="polaroid-photos" id="polaroidPhotos"></div>
+
+    <div id="ui-layer">
+
+        <div class="camera-container" id="stage1">
+            <label for="file-input">
+                <div class="polaroid-cam">
+                    <div class="flash-btn"></div>
+                    <div class="lens"></div>
+                </div>
+            </label>
+            <div class="cam-text">点击相机生成你的2025回忆</div>
+            <div class="cam-text" style="font-size: 0.9rem; opacity: 0.7; margin-top: 10px;">(选择 5-10 张照片)</div>
+            <input type="file" id="file-input" multiple accept="image/*">
+        </div>
+
+        <div class="card-modal" id="cardModal">
+            <img src="" alt="Memory" class="card-img" id="modalImg">
+            <div class="card-wish" id="modalWish"></div>
+            <button class="close-btn" onclick="closeCard()">收下祝福 ✨</button>
+        </div>
+
+        <div class="instruction" id="instruction"></div>
+
+        <div class="gesture-hint" id="gestureHint" style="display: none;">
+            <div class="gesture-icon">✊ 👉 🖐️</div>
+            <div>握拳然后张开手掌抓取红包</div>
+        </div>
+
+        <div class="gesture-status" id="gestureStatus">检测手势中...</div>
+
+        <div id="camera-preview">
+            <video id="videoElement" autoplay playsinline></video>
+        </div>
+    </div>
+
+    <!-- MediaPipe Hand Tracking -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+
+<script>
+/**
+ * 2026 跨年倒计时 - 增强版
+ * 包含：北极光、流星雨、粒子倒计时、烟花、红包雨、手势识别
+ */
+
+// --- 配置与资源 ---
+const WISHES = [
+    "🎆 2026，愿你的bug都变成feature，头发和财富一样浓密！",
+    "🌟 前路浩浩荡荡，万事尽可期待。2026，起飞！",
+    "✨ 所求皆如愿，所行化坦途。新年快乐！",
+    "🎊 所有的遗憾都是2026惊喜的铺垫。",
+    "🎇 凡是过往，皆为序章。2026，请多指教。",
+    "💫 愿你保持热爱，奔赴山海。",
+    "🧧 拒绝内耗，发财要紧！2026冲鸭！",
+    "🎆 烟火向星辰，所愿皆成真。",
+    "🌙 新的一年，愿你眼里有光，心中有爱。",
+    "🎊 2026，愿所有美好如期而至！",
+    "💰 财源滚滚来，好运连连连！",
+    "🎇 愿你的生活如烟花般绚烂多彩！"
+];
+
+let userPhotos = [];
+let gestureEnabled = false;
+
+// --- Canvas 设置 ---
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const meteorCanvas = document.getElementById('meteorCanvas');
+const meteorCtx = meteorCanvas.getContext('2d');
+
+let w, h;
+
+function resize() {
+    w = canvas.width = meteorCanvas.width = window.innerWidth;
+    h = canvas.height = meteorCanvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resize);
+resize();
+
+// --- 工具函数 ---
+const random = (min, max) => Math.random() * (max - min) + min;
+const randomInt = (min, max) => Math.floor(random(min, max));
+
+// --- 星星背景系统 ---
+class Star {
+    constructor() {
+        this.reset();
+    }
+
+    reset() {
+        this.x = random(0, w);
+        this.y = random(0, h);
+        this.size = random(0.5, 2);
+        this.opacity = random(0.3, 1);
+        this.twinkleSpeed = random(0.005, 0.02);
+        this.twinkleDirection = Math.random() > 0.5 ? 1 : -1;
+    }
+
+    update() {
+        this.opacity += this.twinkleSpeed * this.twinkleDirection;
+        if (this.opacity >= 1 || this.opacity <= 0.3) {
+            this.twinkleDirection *= -1;
+        }
+    }
+
+    draw() {
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+}
+
+let stars = Array.from({ length: 200 }, () => new Star());
+
+// --- 流星雨系统 ---
+class Meteor {
+    constructor() {
+        this.reset();
+    }
+
+    reset() {
+        this.x = random(0, w * 1.5);
+        this.y = -100;
+        this.length = random(80, 200);
+        this.speed = random(10, 20);
+        this.angle = Math.PI / 4;
+        this.opacity = 1;
+        this.width = random(1, 3);
+    }
+
+    update() {
+        this.x -= this.speed * Math.cos(this.angle);
+        this.y += this.speed * Math.sin(this.angle);
+        this.opacity -= 0.01;
+
+        if (this.y > h + 100 || this.x < -100 || this.opacity <= 0) {
+            return false;
+        }
+        return true;
+    }
+
+    draw() {
+        meteorCtx.strokeStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        meteorCtx.lineWidth = this.width;
+        meteorCtx.lineCap = 'round';
+
+        // 绘制流星尾迹（渐变效果）
+        const gradient = meteorCtx.createLinearGradient(
+            this.x, this.y,
+            this.x + this.length * Math.cos(this.angle),
+            this.y - this.length * Math.sin(this.angle)
+        );
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${this.opacity})`);
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        meteorCtx.strokeStyle = gradient;
+        meteorCtx.beginPath();
+        meteorCtx.moveTo(this.x, this.y);
+        meteorCtx.lineTo(
+            this.x + this.length * Math.cos(this.angle),
+            this.y - this.length * Math.sin(this.angle)
+        );
+        meteorCtx.stroke();
+
+        // 流星头部光晕
+        meteorCtx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        meteorCtx.shadowColor = 'white';
+        meteorCtx.shadowBlur = 10;
+        meteorCtx.beginPath();
+        meteorCtx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        meteorCtx.fill();
+        meteorCtx.shadowBlur = 0;
+    }
+}
+
+let meteors = [];
+let meteorShowerActive = false;
+
+function startMeteorShower() {
+    meteorShowerActive = true;
+    setTimeout(() => {
+        meteorShowerActive = false;
+    }, 8000);
+}
+
+// --- 粒子文字系统 ---
+class Particle {
+    constructor(x, y, color) {
+        this.x = Math.random() * w;
+        this.y = Math.random() * h;
+        this.destX = x;
+        this.destY = y;
+        this.vx = (Math.random() - 0.5) * 15;
+        this.vy = (Math.random() - 0.5) * 15;
+        this.accX = 0;
+        this.accY = 0;
+        this.friction = 0.94;
+        this.ease = 0.05 + Math.random() * 0.05;
+        this.color = color || `hsl(${random(30, 60)}, 100%, ${random(50, 70)}%)`;
+        this.size = random(2, 4);
+        this.initialX = this.x;
+        this.initialY = this.y;
+        this.exploding = false;
+    }
+
+    explode() {
+        this.exploding = true;
+        this.vx = (Math.random() - 0.5) * 30;
+        this.vy = (Math.random() - 0.5) * 30;
+    }
+
+    update() {
+        if (this.exploding) {
+            this.x += this.vx;
+            this.y += this.vy;
+            this.vx *= 0.95;
+            this.vy *= 0.95;
+
+            // 重新汇聚
+            if (Math.abs(this.vx) < 0.5 && Math.abs(this.vy) < 0.5) {
+                this.exploding = false;
+            }
+        } else {
+            this.accX = (this.destX - this.x) * this.ease;
+            this.accY = (this.destY - this.y) * this.ease;
+            this.vx += this.accX;
+            this.vy += this.accY;
+            this.vx *= this.friction;
+            this.vy *= this.friction;
+            this.x += this.vx;
+            this.y += this.vy;
+        }
+    }
+
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
+let textParticles = [];
+
+function createTextParticles(text, fontSize = 200) {
+    // 先爆炸现有粒子
+    textParticles.forEach(p => p.explode());
+
+    setTimeout(() => {
+        textParticles = [];
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = w;
+        offCanvas.height = h;
+        const offCtx = offCanvas.getContext('2d');
+
+        offCtx.fillStyle = '#fff';
+        offCtx.font = `900 ${fontSize}px Montserrat`;
+        offCtx.textAlign = 'center';
+        offCtx.textBaseline = 'middle';
+        offCtx.fillText(text, w / 2, h / 2);
+
+        const data = offCtx.getImageData(0, 0, w, h).data;
+        const gap = Math.max(6, Math.floor(w / 300));
+
+        for (let y = 0; y < h; y += gap) {
+            for (let x = 0; x < w; x += gap) {
+                const alpha = data[(y * w + x) * 4 + 3];
+                if (alpha > 128) {
+                    const hue = random(30, 60);
+                    const color = `hsl(${hue}, 100%, ${random(50, 70)}%)`;
+                    textParticles.push(new Particle(x, y, color));
+                }
+            }
+        }
+    }, 200);
+}
+
+// --- 增强烟花系统 ---
+class Firework {
+    constructor(type = 'sphere') {
+        this.x = random(w * 0.1, w * 0.9);
+        this.y = h;
+        this.targetY = random(h * 0.1, h * 0.4);
+        this.speed = random(8, 15);
+        this.angle = -Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+        this.vx = Math.cos(this.angle) * this.speed;
+        this.vy = Math.sin(this.angle) * this.speed;
+        this.hue = random(0, 360);
+        this.dead = false;
+        this.particles = [];
+        this.type = type;
+        this.trail = [];
+    }
+
+    update() {
+        // 添加尾迹
+        this.trail.push({ x: this.x, y: this.y, alpha: 1 });
+        if (this.trail.length > 10) this.trail.shift();
+
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += 0.08;
+
+        if (this.vy >= 0 || this.y <= this.targetY) {
+            this.explode();
+            this.dead = true;
+        }
+    }
+
+    explode() {
+        const particleCount = this.type === 'heart' ? 100 : 80;
+        for (let i = 0; i < particleCount; i++) {
+            this.particles.push(new FireworkParticle(
+                this.x, this.y, this.hue, this.type
+            ));
+        }
+    }
+
+    draw() {
+        // 绘制尾迹
+        this.trail.forEach((t, i) => {
+            t.alpha -= 0.1;
+            if (t.alpha > 0) {
+                ctx.fillStyle = `hsla(${this.hue}, 100%, 50%, ${t.alpha * 0.5})`;
+                ctx.beginPath();
+                ctx.arc(t.x, t.y, 2, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        if (!this.dead) {
+            ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
+            ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        this.particles.forEach((p, index) => {
+            p.update();
+            p.draw();
+            if (p.alpha <= 0) this.particles.splice(index, 1);
+        });
+    }
+}
+
+class FireworkParticle {
+    constructor(x, y, hue, type = 'sphere') {
+        this.x = x;
+        this.y = y;
+        this.hue = hue;
+        this.alpha = 1;
+        this.decay = random(0.008, 0.02);
+        this.gravity = 0.08;
+        this.type = type;
+
+        let angle, speed;
+
+        switch(type) {
+            case 'heart':
+                // 心形方程
+                const t = (Math.PI * 2 * Math.random());
+                const heartX = 16 * Math.pow(Math.sin(t), 3);
+                const heartY = -(13 * Math.cos(t) - 5 * Math.cos(2*t) - 2 * Math.cos(3*t) - Math.cos(4*t));
+                angle = Math.atan2(heartY, heartX);
+                speed = random(2, 5) * Math.sqrt(heartX*heartX + heartY*heartY) / 20;
+                break;
+
+            case 'spiral':
+                angle = random(0, Math.PI * 2);
+                speed = random(1, 8);
+                this.spiralAngle = angle;
+                this.spiralSpeed = random(0.1, 0.3);
+                break;
+
+            default: // sphere
+                angle = random(0, Math.PI * 2);
+                speed = random(2, 8);
+        }
+
+        this.vx = Math.cos(angle) * speed;
+        this.vy = Math.sin(angle) * speed;
+        this.size = random(2, 4);
+    }
+
+    update() {
+        if (this.type === 'spiral') {
+            this.spiralAngle += this.spiralSpeed;
+            this.vx += Math.cos(this.spiralAngle) * 0.3;
+            this.vy += Math.sin(this.spiralAngle) * 0.3;
+        }
+
+        this.x += this.vx;
+        this.y += this.vy;
+        this.vy += this.gravity;
+        this.vx *= 0.98;
+        this.vy *= 0.98;
+        this.alpha -= this.decay;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.globalAlpha = this.alpha;
+        ctx.fillStyle = `hsl(${this.hue}, 100%, 60%)`;
+        ctx.shadowColor = `hsl(${this.hue}, 100%, 50%)`;
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+}
+
+let fireworks = [];
+const fireworkTypes = ['sphere', 'heart', 'spiral'];
+
+// --- 红包系统 ---
+class RedEnvelope {
+    constructor() {
+        this.x = random(50, w - 50);
+        this.y = -70;
+        this.w = 50;
+        this.h = 70;
+        this.vy = random(2, 5);
+        this.vx = random(-1, 1);
+        this.rotation = random(-30, 30);
+        this.rotSpeed = random(-3, 3);
+        this.dead = false;
+        this.scale = 0;
+        this.targetScale = 1;
+        this.color = `hsl(${random(0, 20)}, 80%, ${random(45, 55)}%)`;
+    }
+
+    update() {
+        // 出现动画
+        if (this.scale < this.targetScale) {
+            this.scale += 0.1;
+        }
+
+        this.y += this.vy;
+        this.x += this.vx;
+        this.rotation += this.rotSpeed;
+
+        // 边界反弹
+        if (this.x < 30 || this.x > w - 30) {
+            this.vx *= -1;
+        }
+
+        if (this.y > h + 80) {
+            this.dead = true;
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.scale(this.scale, this.scale);
+        ctx.rotate(this.rotation * Math.PI / 180);
+
+        // 红包主体
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.roundRect(-this.w/2, -this.h/2, this.w, this.h, 5);
+        ctx.fill();
+
+        // 金色边框
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // 金色封口
+        ctx.fillStyle = '#ffd700';
+        ctx.fillRect(-this.w/2, -this.h/4, this.w, 12);
+
+        // "福"字
+        ctx.fillStyle = '#ffeb3b';
+        ctx.font = 'bold 24px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('福', 0, 10);
+
+        // 光晕效果
+        ctx.shadowColor = '#ffd700';
+        ctx.shadowBlur = 15;
+        ctx.strokeStyle = 'rgba(255,215,0,0.5)';
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.restore();
+    }
+
+    isClicked(mx, my) {
+        const dx = mx - this.x;
+        const dy = my - this.y;
+        return Math.sqrt(dx*dx + dy*dy) < 50;
+    }
+}
+
+let envelopes = [];
+
+// --- 彩带系统 ---
+function createConfetti(x, y) {
+    const container = document.getElementById('confettiContainer');
+    const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6b9d', '#c44569'];
+
+    for (let i = 0; i < 50; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = x + 'px';
+        confetti.style.top = y + 'px';
+        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+        confetti.style.transform = `rotate(${Math.random() * 360}deg)`;
+        confetti.style.animationDuration = (2 + Math.random() * 2) + 's';
+        confetti.style.animationDelay = (Math.random() * 0.3) + 's';
+        container.appendChild(confetti);
+
+        setTimeout(() => confetti.remove(), 3000);
+    }
+}
+
+// --- 流程控制 ---
+let currentStage = 0;
+let countdownValue = 10;
+
+function init() {
+    requestAnimationFrame(loop);
+
+    const stage1UI = document.getElementById('stage1');
+    stage1UI.style.opacity = 1;
+}
+
+// 监听文件上传
+document.getElementById('file-input').addEventListener('change', function(e) {
+    if (this.files && this.files.length > 0) {
+        const files = Array.from(this.files);
+        const photoCount = Math.min(files.length, 10);
+
+        if (photoCount < 5) {
+            alert('请至少选择 5 张照片！');
+            return;
+        }
+
+        let loadedCount = 0;
+        files.slice(0, 10).forEach((file, index) => {
+            const reader = new FileReader();
+            reader.onload = (evt) => {
+                userPhotos.push(evt.target.result);
+                loadedCount++;
+
+                if (loadedCount === photoCount) {
+                    showPolaroidPhotos();
+                }
+            };
+            reader.readAsDataURL(file);
+        });
+    }
+});
+
+function showPolaroidPhotos() {
+    const flash = document.getElementById('flash');
+    flash.style.opacity = 1;
+    setTimeout(() => { flash.style.opacity = 0; }, 150);
+
+    const container = document.getElementById('polaroidPhotos');
+    container.innerHTML = '';
+
+    userPhotos.forEach((photo, index) => {
+        const polaroid = document.createElement('div');
+        polaroid.className = 'polaroid-photo';
+        polaroid.style.setProperty('--rotation', `${random(-15, 15)}deg`);
+        polaroid.style.animationDelay = `${index * 0.15}s`;
+
+        const img = document.createElement('img');
+        img.src = photo;
+        polaroid.appendChild(img);
+        container.appendChild(polaroid);
+    });
+
+    setTimeout(() => {
+        container.innerHTML = '';
+        startCountdownStage();
+    }, 4000);
+}
+
+function startCountdownStage() {
+    document.getElementById('stage1').style.display = 'none';
+    currentStage = 1;
+    startCountdownLogic();
+}
+
+function startCountdownLogic() {
+    createTextParticles(countdownValue.toString());
+
+    const interval = setInterval(() => {
+        countdownValue--;
+        if (countdownValue > 0) {
+            // 倒计时紧张效果
+            if (countdownValue <= 3) {
+                document.getElementById('instruction').innerText = `即将来临... ${countdownValue}`;
+                document.getElementById('instruction').style.color = '#ff6b6b';
+            }
+            createTextParticles(countdownValue.toString());
+        } else {
+            clearInterval(interval);
+            startCelebrationStage();
+        }
+    }, 1000);
+}
+
+function startCelebrationStage() {
+    currentStage = 2;
+    createTextParticles("2026", Math.min(w / 4, 180));
+
+    document.getElementById('instruction').innerText = '🎉 2026 到来！新年快乐！ 🎉';
+    document.getElementById('instruction').style.color = '#ffd700';
+
+    // 启动流星雨和红包雨
+    startMeteorShower();
+
+    setTimeout(() => {
+        currentStage = 3;
+        textParticles = [];
+        document.getElementById('instruction').innerText = '🧧 满屏红包雨来袭！点击红包抓取惊喜！';
+
+        // 尝试启用手势识别
+        tryInitGestureRecognition();
+
+        window.addEventListener('click', handleEnvelopeClick);
+        window.addEventListener('touchstart', (e) => {
+            handleEnvelopeClick(e.touches[0]);
+        });
+    }, 5000);
+}
+
+// --- 手势识别系统 ---
+let hands = null;
+let camera = null;
+let videoElement = document.getElementById('videoElement');
+let lastGesture = 'open';
+let gestureCooldown = false;
+
+async function tryInitGestureRecognition() {
+    try {
+        // 检查摄像头支持
+        const stream = await navigator.mediaDevices.getUserMedia({
+            video: { width: 320, height: 240 }
+        });
+
+        gestureEnabled = true;
+        document.getElementById('camera-preview').classList.add('active');
+        document.getElementById('gestureHint').style.display = 'block';
+        document.getElementById('gestureStatus').classList.add('active');
+
+        initMediaPipe();
+    } catch (err) {
+        console.log('摄像头不可用，使用点击交互');
+        gestureEnabled = false;
+    }
+}
+
+function initMediaPipe() {
+    hands = new Hands({
+        locateFile: (file) => {
+            return `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`;
+        }
+    });
+
+    hands.setOptions({
+        maxNumHands: 1,
+        modelComplexity: 1,
+        minDetectionConfidence: 0.7,
+        minTrackingConfidence: 0.7
+    });
+
+    hands.onResults(onHandResults);
+
+    camera = new Camera(videoElement, {
+        onFrame: async () => {
+            if (hands) {
+                await hands.send({ image: videoElement });
+            }
+        },
+        width: 320,
+        height: 240
+    });
+
+    camera.start();
+}
+
+function onHandResults(results) {
+    if (!gestureEnabled || currentStage !== 3) return;
+
+    const gestureStatus = document.getElementById('gestureStatus');
+
+    if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+        const landmarks = results.multiHandLandmarks[0];
+        const gesture = detectGesture(landmarks);
+
+        gestureStatus.classList.remove('detected');
+        gestureStatus.textContent = `手势: ${gesture === 'fist' ? '✊ 握拳' : '🖐️ 张开'}`;
+
+        if (gesture === 'fist' && lastGesture === 'open' && !gestureCooldown) {
+            // 检测到握拳，准备抓取
+            gestureStatus.textContent = '✊ 准备抓取... 张开手掌！';
+            lastGesture = 'fist';
+        }
+        else if (gesture === 'open' && lastGesture === 'fist' && !gestureCooldown) {
+            // 检测到张开手掌，执行抓取
+            gestureStatus.classList.add('detected');
+            gestureStatus.textContent = '🖐️ 抓取成功！';
+            grabRandomEnvelope();
+            lastGesture = 'open';
+            gestureCooldown = true;
+            setTimeout(() => { gestureCooldown = false; }, 1500);
+        }
+        else if (gesture === 'open') {
+            lastGesture = 'open';
+        }
+    } else {
+        gestureStatus.textContent = '未检测到手部';
+        lastGesture = 'open';
+    }
+}
+
+function detectGesture(landmarks) {
+    // 检测手指是否伸展
+    const fingerTips = [8, 12, 16, 20]; // 食指、中指、无名指、小指指尖
+    const fingerBases = [5, 9, 13, 17]; // 对应的指关节
+
+    let extendedFingers = 0;
+
+    fingerTips.forEach((tip, i) => {
+        if (landmarks[tip].y < landmarks[fingerBases[i]].y) {
+            extendedFingers++;
+        }
+    });
+
+    // 拇指检测
+    if (landmarks[4].x < landmarks[3].x) {
+        extendedFingers++;
+    }
+
+    // 握拳：伸展的手指 <= 1
+    // 张开：伸展的手指 >= 4
+    if (extendedFingers <= 1) {
+        return 'fist';
+    } else if (extendedFingers >= 4) {
+        return 'open';
+    }
+    return 'open';
+}
+
+function grabRandomEnvelope() {
+    if (envelopes.length === 0) {
+        // 生成一个红包
+        const env = new RedEnvelope();
+        env.x = w / 2;
+        env.y = h / 2;
+        envelopes.push(env);
+        setTimeout(() => openEnvelope(env.x, env.y), 300);
+    } else {
+        // 随机选择一个红包
+        const randomIndex = randomInt(0, envelopes.length);
+        const env = envelopes[randomIndex];
+        openEnvelope(env.x, env.y);
+        envelopes.splice(randomIndex, 1);
+    }
+}
+
+function handleEnvelopeClick(e) {
+    if (currentStage !== 3) return;
+    const mx = e.clientX;
+    const my = e.clientY;
+
+    for (let i = envelopes.length - 1; i >= 0; i--) {
+        if (envelopes[i].isClicked(mx, my)) {
+            openEnvelope(envelopes[i].x, envelopes[i].y);
+            envelopes.splice(i, 1);
+            break;
+        }
+    }
+}
+
+function openEnvelope(x, y) {
+    // 烟花
+    for (let k = 0; k < 8; k++) {
+        fireworks.push(new Firework(fireworkTypes[randomInt(0, fireworkTypes.length)]));
+    }
+
+    // 彩带
+    createConfetti(x, y);
+
+    // 显示卡片
+    const modal = document.getElementById('cardModal');
+    const img = document.getElementById('modalImg');
+    const wish = document.getElementById('modalWish');
+
+    if (userPhotos.length > 0) {
+        img.src = userPhotos[randomInt(0, userPhotos.length)];
+    } else {
+        img.src = "https://picsum.photos/320/240?random=" + Date.now();
+    }
+
+    wish.innerText = WISHES[randomInt(0, WISHES.length)];
+    modal.classList.add('show');
+}
+
+window.closeCard = function() {
+    document.getElementById('cardModal').classList.remove('show');
+}
+
+// --- 主循环 ---
+function loop() {
+    // 清除主画布
+    ctx.fillStyle = 'rgba(2, 0, 16, 0.15)';
+    ctx.fillRect(0, 0, w, h);
+
+    // 清除流星画布
+    meteorCtx.clearRect(0, 0, w, h);
+
+    // 绘制星星（全阶段）
+    stars.forEach(star => {
+        star.update();
+        star.draw();
+    });
+
+    // 粒子文字（阶段1和2）
+    if (currentStage === 1 || currentStage === 2) {
+        textParticles.forEach(p => {
+            p.update();
+            p.draw();
+        });
+    }
+
+    // 烟花（阶段2和3）
+    if (currentStage === 2 || currentStage === 3) {
+        // 自动发射烟花
+        const spawnRate = currentStage === 2 ? 0.08 : 0.05;
+        if (Math.random() < spawnRate) {
+            fireworks.push(new Firework(fireworkTypes[randomInt(0, fireworkTypes.length)]));
+        }
+    }
+
+    // 绘制烟花
+    fireworks.forEach((fw, index) => {
+        fw.update();
+        fw.draw();
+        if (fw.dead && fw.particles.length === 0) {
+            fireworks.splice(index, 1);
+        }
+    });
+
+    // 流星雨（阶段2和3）
+    if (meteorShowerActive && Math.random() < 0.15) {
+        meteors.push(new Meteor());
+    }
+    // 偶尔出现单个流星（全阶段）
+    else if (!meteorShowerActive && Math.random() < 0.008) {
+        meteors.push(new Meteor());
+    }
+
+    meteors = meteors.filter(meteor => {
+        const alive = meteor.update();
+        if (alive) meteor.draw();
+        return alive;
+    });
+
+    // 红包雨（阶段3）
+    if (currentStage === 3) {
+        // 生成红包
+        if (Math.random() < 0.08) {
+            envelopes.push(new RedEnvelope());
+        }
+
+        envelopes.forEach((env, index) => {
+            env.update();
+            env.draw();
+            if (env.dead) {
+                envelopes.splice(index, 1);
+            }
+        });
+    }
+
+    requestAnimationFrame(loop);
+}
+
+// 启动
+init();
+
+</script>
+</body>
+</html>
