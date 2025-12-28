@@ -311,13 +311,13 @@ function createTextParticles(text) {
     const tCanvas = document.createElement('canvas');
     const tCtx = tCanvas.getContext('2d');
     tCanvas.width = w; tCanvas.height = h;
-    tCtx.font = `bold ${Math.min(w/2, 300)}px Arial`;
+    tCtx.font = `bold ${Math.min(w/1.5, 500)}px Arial`;
     tCtx.textAlign = 'center'; tCtx.textBaseline = 'middle';
     tCtx.fillText(text, w/2, h/2);
     const data = tCtx.getImageData(0,0,w,h).data;
     textParticles = [];
-    for(let y=0; y<h; y+=8) {
-        for(let x=0; x<w; x+=8) {
+    for(let y=0; y<h; y+=6) {
+        for(let x=0; x<w; x+=6) {
             if(data[(y*w+x)*4+3] > 128) textParticles.push(new TextParticle(x, y));
         }
     }
@@ -325,11 +325,29 @@ function createTextParticles(text) {
 
 // --- 3. 红包与流程逻辑 ---
 class RedEnvelope {
-    constructor() { this.x = random(50, w-50); this.y = -100; this.vy = random(2, 5); }
+    constructor() { this.x = random(80, w-80); this.y = -150; this.vy = random(1.5, 3); }
     update() { this.y += this.vy; }
     draw() {
-        ctx.fillStyle = '#d63031'; ctx.beginPath(); ctx.roundRect(this.x-20, this.y-30, 40, 60, 5); ctx.fill();
-        ctx.fillStyle = '#ffd700'; ctx.font = '16px Arial'; ctx.textAlign='center'; ctx.fillText('福', this.x, this.y+10);
+        // 更大的红包：宽100，高120
+        ctx.fillStyle = '#d63031';
+        ctx.beginPath();
+        ctx.roundRect(this.x-50, this.y-60, 100, 120, 8);
+        ctx.fill();
+
+        // 红包装饰线条
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(this.x-50, this.y-20);
+        ctx.lineTo(this.x+50, this.y-20);
+        ctx.stroke();
+
+        // "福"字
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold 36px serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('福', this.x, this.y+15);
     }
 }
 
@@ -395,7 +413,8 @@ function openCard() {
 window.addEventListener('mousedown', (e) => {
     if(currentStage === 3) {
         envelopes.forEach((env, i) => {
-            if(Math.abs(e.clientX - env.x) < 30 && Math.abs(e.clientY - env.y) < 40) {
+            // 调整点击检测范围，匹配更大的红包尺寸（宽100，高120）
+            if(Math.abs(e.clientX - env.x) < 60 && Math.abs(e.clientY - env.y) < 70) {
                 openCard(); envelopes.splice(i, 1);
             }
         });
@@ -428,7 +447,10 @@ function loop() {
     });
 
     if (currentStage === 3) {
-        if(Math.random() < 0.05) envelopes.push(new RedEnvelope());
+        // 降低生成频率，同时限制最大数量为6个
+        if(envelopes.length < 6 && Math.random() < 0.02) {
+            envelopes.push(new RedEnvelope());
+        }
         envelopes.forEach((env, i) => {
             env.update(); env.draw();
             if(env.y > h) envelopes.splice(i, 1);
