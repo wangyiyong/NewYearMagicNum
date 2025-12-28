@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>2026 HAPPY NEW YEAR</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0">
+
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  background:#000;
+  overflow:hidden;
+  font-family:"Helvetica Neue",sans-serif;
+}
+
+/* ⭐关键修复：Canvas 不接收点击事件 */
+canvas{
+  position:fixed;
+  top:0;
+  left:0;
+  pointer-events:none;
+}
+
+/* 拍立得 */
+#camera{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:200px;
+  cursor:pointer;
+  animation:float 3s ease-in-out infinite;
+  z-index:10;
+}
+@keyframes float{
+  0%,100%{transform:translate(-50%,-48%)}
+  50%{transform:translate(-50%,-52%)}
+}
+
+/* 相纸 */
+.polaroid{
+  position:absolute;
+  width:120px;
+  background:#fff;
+  padding:8px 8px 24px;
+  box-shadow:0 15px 40px rgba(0,0,0,.6);
+}
+.polaroid img{width:100%;display:block}
+
+/* 红包 */
+.red{
+  position:absolute;
+  width:40px;
+  height:60px;
+  background:linear-gradient(#e60012,#b3000d);
+  border-radius:6px;
+  z-index:8;
+}
+
+/* 终章 */
+#final{
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  color:#ffd700;
+  text-align:center;
+  font-size:48px;
+  opacity:0;
+  transition:opacity 2s;
+  z-index:20;
+}
+</style>
+</head>
+<body>
+
+<canvas id="bg"></canvas>
+<canvas id="fx"></canvas>
+
+<!-- 拍立得相机 -->
+<svg id="camera" viewBox="0 0 200 160">
+  <rect x="10" y="40" rx="15" width="180" height="110" fill="#f5f5f5"/>
+  <rect x="60" y="10" width="80" height="40" rx="10" fill="#ddd"/>
+  <circle cx="100" cy="95" r="35" fill="#222"/>
+  <circle cx="100" cy="95" r="20" fill="#444"/>
+</svg>
+
+<input id="file" type="file" multiple accept="image/*" hidden>
+
+<div id="final">
+  <div>2026</div>
+  <div>HAPPY NEW YEAR</div>
+  <div style="font-size:20px;margin-top:20px">
+    愿你所求皆如愿<br>所行皆坦途
+  </div>
+</div>
+
+<script>
+/* ======================
+   初始化
+====================== */
+const bg = document.getElementById('bg');
+const fx = document.getElementById('fx');
+const ctx = bg.getContext('2d');
+const fctx = fx.getContext('2d');
+
+function resize(){
+  bg.width = fx.width = innerWidth;
+  bg.height = fx.height = innerHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+let stage = 1;
+
+/* ======================
+   星空 / 北极光 / 流星
+====================== */
+const stars=[];
+for(let i=0;i<250;i++){
+  stars.push({
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight,
+    r:Math.random()*1.5,
+    a:Math.random()*6,
+    s:Math.random()*0.02
+  });
+}
+let aur=0;
+const meteors=[];
+
+function spawnMeteor(){
+  meteors.push({
+    x:Math.random()*innerWidth,
+    y:Math.random()*innerHeight*0.5,
+    vx:-8-Math.random()*4,
+    vy:6+Math.random()*3,
+    life:80
+  });
+}
+
+function bgLoop(){
+  ctx.clearRect(0,0,bg.width,bg.height);
+
+  const g=ctx.createLinearGradient(0,0,0,bg.height);
+  g.addColorStop(0,'#020111');
+  g.addColorStop(1,'#000');
+  ctx.fillStyle=g;
+  ctx.fillRect(0,0,bg.width,bg.height);
+
+  aur+=0.003;
+  stars.forEach(s=>{
+    s.a+=s.s;
+    ctx.fillStyle=`rgba(255,255,255,${0.3+Math.sin(s.a)*0.4})`;
+    ctx.beginPath();
+    ctx.arc(s.x,s.y,s.r,0,Math.PI*2);
+    ctx.fill();
+  });
+
+  for(let i=0;i<3;i++){
+    const y=bg.height*0.2+i*80;
+    const ag=ctx.createLinearGradient(0,y,0,y+200);
+    ag.addColorStop(0,'rgba(0,255,200,.08)');
+    ag.addColorStop(.5,'rgba(0,150,255,.12)');
+    ag.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=ag;
+    ctx.beginPath();
+    ctx.moveTo(0,y);
+    for(let x=0;x<=bg.width;x+=20){
+      ctx.lineTo(x,y+Math.sin(x*0.01+aur+i)*30);
+    }
+    ctx.lineTo(bg.width,bg.height);
+    ctx.lineTo(0,bg.height);
+    ctx.fill();
+  }
+
+  if(Math.random()<0.01) spawnMeteor();
+  meteors.forEach((m,i)=>{
+    m.x+=m.vx;
+    m.y+=m.vy;
+    m.life--;
+    ctx.strokeStyle='rgba(255,255,255,.8)';
+    ctx.beginPath();
+    ctx.moveTo(m.x,m.y);
+    ctx.lineTo(m.x-m.vx*4,m.y-m.vy*4);
+    ctx.stroke();
+    if(m.life<=0) meteors.splice(i,1);
+  });
+
+  requestAnimationFrame(bgLoop);
+}
+bgLoop();
+
+/* ======================
+   拍立得选照片（已修复）
+====================== */
+const cam = document.getElementById('camera');
+const file = document.getElementById('file');
+const photos = [];
+
+cam.addEventListener('click',()=>{
+  file.value='';
+  file.click();
+});
+
+file.addEventListener('change',e=>{
+  [...e.target.files].slice(0,10).forEach(f=>{
+    const img=new Image();
+    img.onload=()=>{
+      const d=document.createElement('div');
+      d.className='polaroid';
+      d.style.left='50%';
+      d.style.top='50%';
+      d.style.transform=`translate(-50%,-50%) rotate(${Math.random()*40-20}deg)`;
+      d.appendChild(img);
+      document.body.appendChild(d);
+      photos.push(d);
+      if(photos.length>=5){
+        setTimeout(startCountdown,2000);
+      }
+    };
+    img.src=URL.createObjectURL(f);
+  });
+});
+
+/* ======================
+   粒子倒计时
+====================== */
+const off=document.createElement('canvas');
+const offCtx=off.getContext('2d');
+let particles=[];
+let num=10;
+
+function startCountdown(){
+  stage=3;
+  cam.remove();
+  photos.forEach(p=>p.remove());
+  countdown();
+}
+
+function drawNumber(n){
+  off.width=fx.width;
+  off.height=fx.height;
+  offCtx.clearRect(0,0,off.width,off.height);
+  offCtx.fillStyle='#fff';
+  offCtx.font='bold 240px sans-serif';
+  offCtx.textAlign='center';
+  offCtx.textBaseline='middle';
+  offCtx.fillText(n,off.width/2,off.height/2);
+  const data=offCtx.getImageData(0,0,off.width,off.height).data;
+  particles=[];
+  for(let y=0;y<off.height;y+=6){
+    for(let x=0;x<off.width;x+=6){
+      if(data[(y*off.width+x)*4+3]>128){
+        particles.push({
+          x,y,
+          vx:(Math.random()-.5)*4,
+          vy:(Math.random()-.5)*4,
+          life:80
+        });
+      }
+    }
+  }
+}
+
+function countdown(){
+  drawNumber(num);
+  const timer=setInterval(()=>{
+    fctx.clearRect(0,0,fx.width,fx.height);
+    particles.forEach(p=>{
+      p.x+=p.vx;
+      p.y+=p.vy;
+      p.life--;
+      fctx.fillStyle=`rgba(255,215,0,${p.life/80})`;
+      fctx.fillRect(p.x,p.y,2,2);
+    });
+  },16);
+
+  setTimeout(()=>{
+    clearInterval(timer);
+    num--;
+    if(num>0) countdown();
+    else startFireworks();
+  },900);
+}
+
+/* ======================
+   爱心烟火
+====================== */
+let fireworks=[];
+function heart(t){
+  return {
+    x:16*Math.pow(Math.sin(t),3),
+    y:13*Math.cos(t)-5*Math.cos(2*t)-2*Math.cos(3*t)-Math.cos(4*t)
+  };
+}
+
+function startFireworks(){
+  stage=4;
+  for(let i=0;i<300;i++){
+    const t=Math.random()*Math.PI*2;
+    const h=heart(t);
+    fireworks.push({
+      x:fx.width/2+h.x*15,
+      y:fx.height/2-h.y*15,
+      vx:(Math.random()-.5)*3,
+      vy:(Math.random()-.5)*3,
+      life:120
+    });
+  }
+  fireLoop();
+  setTimeout(startRedPacket,2000);
+}
+
+function fireLoop(){
+  fctx.clearRect(0,0,fx.width,fx.height);
+  fireworks.forEach(p=>{
+    p.x+=p.vx;
+    p.y+=p.vy;
+    p.life--;
+    fctx.fillStyle=`rgba(255,80,80,${p.life/120})`;
+    fctx.beginPath();
+    fctx.arc(p.x,p.y,2,0,Math.PI*2);
+    fctx.fill();
+  });
+  if(fireworks.some(p=>p.life>0)){
+    requestAnimationFrame(fireLoop);
+  }
+}
+
+/* ======================
+   红包雨 + 终章
+====================== */
+function startRedPacket(){
+  for(let i=0;i<30;i++){
+    const r=document.createElement('div');
+    r.className='red';
+    r.style.left=Math.random()*innerWidth+'px';
+    r.style.top='-80px';
+    document.body.appendChild(r);
+    let y=-80;
+    const fall=setInterval(()=>{
+      y+=3;
+      r.style.top=y+'px';
+      if(y>innerHeight){
+        clearInterval(fall);
+        r.remove();
+      }
+    },16);
+  }
+  setTimeout(showFinal,3000);
+}
+
+function showFinal(){
+  document.getElementById('final').style.opacity=1;
+}
+</script>
+</body>
+</html>
