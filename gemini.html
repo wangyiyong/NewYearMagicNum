@@ -122,7 +122,7 @@
 const canvas = document.getElementById('mainCanvas');
 const ctx = canvas.getContext('2d');
 let w, h, currentStage = 0, userPhotos = [];
-let textParticles = [], fireworks = [], envelopes = [], stars = [];
+let textParticles = [], fireworks = [], envelopes = [], stars = [], meteors = [];
 
 function resize() {
     w = canvas.width = window.innerWidth;
@@ -214,6 +214,63 @@ class Particle {
         ctx.moveTo(this.px, this.py);
         ctx.lineTo(this.x, this.y);
         ctx.stroke();
+    }
+}
+
+// --- 流星雨系统 ---
+class Meteor {
+    constructor() {
+        this.x = random(0, w * 1.5);
+        this.y = -100;
+        this.length = random(80, 150);
+        this.speed = random(10, 18);
+        this.angle = Math.PI / 4;
+        this.opacity = 1;
+        this.width = random(1, 3);
+    }
+
+    update() {
+        this.x -= this.speed * Math.cos(this.angle);
+        this.y += this.speed * Math.sin(this.angle);
+        this.opacity -= 0.01;
+
+        if (this.y > h + 100 || this.x < -100 || this.opacity <= 0) {
+            return false;
+        }
+        return true;
+    }
+
+    draw() {
+        ctx.strokeStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.lineWidth = this.width;
+        ctx.lineCap = 'round';
+
+        // 绘制流星尾迹（渐变效果）
+        const gradient = ctx.createLinearGradient(
+            this.x, this.y,
+            this.x + this.length * Math.cos(this.angle),
+            this.y - this.length * Math.sin(this.angle)
+        );
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${this.opacity})`);
+        gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+
+        ctx.strokeStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(this.x, this.y);
+        ctx.lineTo(
+            this.x + this.length * Math.cos(this.angle),
+            this.y - this.length * Math.sin(this.angle)
+        );
+        ctx.stroke();
+
+        // 流星头部光晕
+        ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+        ctx.shadowColor = 'white';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
     }
 }
 
@@ -376,6 +433,30 @@ function loop() {
             env.update(); env.draw();
             if(env.y > h) envelopes.splice(i, 1);
         });
+    }
+
+    // 流星雨（全阶段持续出现）- 浪漫效果
+    if (currentStage === 0 && Math.random() < 0.03) {
+        meteors.push(new Meteor());
+    }
+    else if (currentStage === 1 && Math.random() < 0.05) {
+        meteors.push(new Meteor());
+    }
+    else if (currentStage === 2 && Math.random() < 0.08) {
+        meteors.push(new Meteor());
+    }
+    else if (currentStage === 3 && Math.random() < 0.06) {
+        meteors.push(new Meteor());
+    }
+
+    // 绘制流星 - 使用倒序遍历
+    for (let i = meteors.length - 1; i >= 0; i--) {
+        const alive = meteors[i].update();
+        if (alive) {
+            meteors[i].draw();
+        } else {
+            meteors.splice(i, 1);
+        }
     }
 
     requestAnimationFrame(loop);

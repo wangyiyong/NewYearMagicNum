@@ -1584,12 +1584,21 @@ function loop() {
         }
     }
 
-    // 流星雨（阶段2和3）- 降低生成频率
-    if (meteorShowerActive && Math.random() < 0.3) {
+    // 流星雨（全阶段持续出现）- 浪漫效果
+    // 阶段0（照片上传）：偶尔出现流星，营造浪漫氛围
+    if (currentStage === 0 && Math.random() < 0.03) {
         meteors.push(new Meteor());
     }
-    // 偶尔出现单个流星（全阶段）- 降低频率
-    else if (!meteorShowerActive && Math.random() < 0.02) {
+    // 阶段1（倒计时）：增加流星频率，配合倒计时紧张感
+    else if (currentStage === 1 && Math.random() < 0.05) {
+        meteors.push(new Meteor());
+    }
+    // 阶段2（庆祝）：流星雨密集，营造庆祝氛围
+    else if (currentStage === 2 && Math.random() < 0.08) {
+        meteors.push(new Meteor());
+    }
+    // 阶段3（红包雨）：持续流星雨，浪漫满屏
+    else if (currentStage === 3 && Math.random() < 0.06) {
         meteors.push(new Meteor());
     }
 
