@@ -133,6 +133,9 @@ resize();
 
 const random = (min, max) => Math.random() * (max - min) + min;
 
+// 极光系统
+let auroraSystem = null;
+
 // --- 1. 灵动游动烟火系统 (核心升级) ---
 class Firework {
     constructor() {
@@ -214,6 +217,151 @@ class Particle {
         ctx.moveTo(this.px, this.py);
         ctx.lineTo(this.x, this.y);
         ctx.stroke();
+    }
+}
+
+// --- 真实极光系统 ---
+class AuroraBand {
+    constructor(y, height, color) {
+        this.baseY = y;
+        this.height = height;
+        this.color = color;
+        this.waves = [];
+        // 对角线移动参数
+        this.angle = random(Math.PI * 0.15, Math.PI * 0.25); // 15-45度角
+        this.driftSpeed = random(0.1, 0.2); // 缓慢平移速度
+        this.driftOffset = random(0, 1000);
+
+        // 创建多个流动的波浪
+        for (let i = 0; i < 4; i++) {
+            this.waves.push({
+                amplitude: random(30, 60),
+                frequency: random(0.004, 0.007),
+                speed: random(0.002, 0.004),
+                phase: random(0, Math.PI * 2)
+            });
+        }
+        this.time = random(0, 1000);
+        // 更柔和的透明度
+        this.opacity = random(0.025, 0.06);
+        // 缓慢脉动效果
+        this.pulseSpeed = random(0.001, 0.002);
+        this.pulseOffset = random(0, Math.PI * 2);
+    }
+
+    update() {
+        this.time += 1;
+    }
+
+    draw() {
+        // 计算对角线平移偏移
+        const driftX = Math.cos(this.angle) * this.time * this.driftSpeed * 5;
+        const driftY = Math.sin(this.angle) * this.time * this.driftSpeed * 3;
+
+        // 计算脉动透明度（更缓慢）
+        const pulse = Math.sin(this.time * this.pulseSpeed + this.pulseOffset) * 0.5 + 0.5;
+        const currentOpacity = this.opacity * (0.6 + pulse * 0.4);
+
+        // 绘制双层波浪，更柔和
+        for (let layer = 0; layer < 2; layer++) {
+            const layerOpacity = currentOpacity * (1 - layer * 0.3);
+            const layerDrift = layer * 10;
+
+            // 创建对角线渐变
+            const gradient = ctx.createLinearGradient(
+                driftX - 100, this.baseY + driftY - 50,
+                driftX + w + 100, this.baseY + this.height + driftY + 50
+            );
+            gradient.addColorStop(0, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`);
+            gradient.addColorStop(0.35, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.3})`);
+            gradient.addColorStop(0.5, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.7})`);
+            gradient.addColorStop(0.65, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.3})`);
+            gradient.addColorStop(1, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`);
+
+            ctx.fillStyle = gradient;
+            ctx.beginPath();
+
+            // 上边缘 - 对角线流动的波浪曲线
+            for (let x = -50; x <= w + 50; x += 10) {
+                let yOffset = 0;
+                this.waves.forEach((wave, i) => {
+                    const layerMod = (layer + i) % 2 === 0 ? 1 : -1;
+                    // 结合对角线偏移和波浪运动
+                    const waveX = x + driftX + layerDrift;
+                    yOffset += Math.sin(
+                        waveX * wave.frequency +
+                        this.time * wave.speed +
+                        wave.phase
+                    ) * wave.amplitude * layerMod;
+                });
+                const y = this.baseY + driftY + yOffset;
+                if (x === -50) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+
+            // 下边缘（不同的波浪曲线）
+            for (let x = w + 50; x >= -50; x -= 10) {
+                let yOffset = 0;
+                this.waves.forEach((wave, i) => {
+                    const layerMod = (layer + i + 1) % 2 === 0 ? 1 : -1;
+                    const waveX = x + driftX + layerDrift;
+                    yOffset += Math.sin(
+                        waveX * wave.frequency * 0.85 +
+                        this.time * wave.speed * 1.15 +
+                        wave.phase + Math.PI
+                    ) * wave.amplitude * 0.65 * layerMod;
+                });
+                const y = this.baseY + this.height + driftY + yOffset;
+                ctx.lineTo(x, y);
+            }
+
+            ctx.closePath();
+            ctx.fill();
+        }
+    }
+}
+
+class AuroraSystem {
+    constructor() {
+        this.bands = [];
+        this.createBands();
+    }
+
+    createBands() {
+        // 更柔和的极光颜色（降低饱和度和亮度）
+        const colorSchemes = [
+            // 淡绿色系
+            {r: 60, g: 140, b: 80},
+            {r: 40, g: 120, b: 70},
+            {r: 80, g: 160, b: 100},
+            // 淡紫色系
+            {r: 100, g: 80, b: 140},
+            {r: 80, g: 60, b: 120},
+            // 淡蓝色系
+            {r: 60, g: 100, b: 140},
+            {r: 80, g: 120, b: 160},
+            // 淡青色系
+            {r: 50, g: 130, b: 130}
+        ];
+
+        // 只创建2-3层极光带，减少视觉负担
+        const numBands = Math.floor(random(2, 4));
+        for (let i = 0; i < numBands; i++) {
+            const color = colorSchemes[Math.floor(random(0, colorSchemes.length))];
+            // 极光位置更靠上，在屏幕顶部10%-35%区域
+            const y = h * 0.05 + i * h * 0.1;
+            const height = random(h * 0.12, h * 0.2);
+            this.bands.push(new AuroraBand(y, height, color));
+        }
+    }
+
+    update() {
+        this.bands.forEach(band => band.update());
+    }
+
+    draw() {
+        // 不使用混合模式，让极光更自然融入背景
+        this.bands.forEach(band => band.draw());
     }
 }
 
@@ -492,6 +640,7 @@ window.addEventListener('mousedown', (e) => {
 });
 
 // --- 5. 主循环 ---
+// 初始化星星
 for(let i=0; i<100; i++) {
     stars.push({
         x:random(0,w),
@@ -501,6 +650,9 @@ for(let i=0; i<100; i++) {
         blinkOffset:random(0, Math.PI*2) // 眨眼相位偏移
     });
 }
+
+// 初始化真实极光系统
+auroraSystem = new AuroraSystem();
 
 function loop() {
     // 烟火残影效果
@@ -517,6 +669,10 @@ function loop() {
         ctx.fillStyle = `rgba(255,255,255,${opacity})`;
         ctx.beginPath(); ctx.arc(s.x, s.y, 1, 0, Math.PI*2); ctx.fill();
     });
+
+    // 绘制真实极光（所有阶段）
+    auroraSystem.update();
+    auroraSystem.draw();
 
     textParticles.forEach(p => { p.update(); p.draw(); });
 
