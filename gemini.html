@@ -292,10 +292,23 @@ class TextParticle {
             '#50FA7B'  // 绿色
         ];
         this.color = colors[Math.floor(Math.random() * colors.length)];
+        this.settled = false; // 是否已经到达目标位置
     }
     update() {
-        this.x += (this.destX - this.x) * 0.1;
-        this.y += (this.destY - this.y) * 0.1;
+        // 如果还没到达目标位置，继续移动
+        if (!this.settled) {
+            this.x += (this.destX - this.x) * 0.15;
+            this.y += (this.destY - this.y) * 0.15;
+
+            // 检查是否已经足够接近目标位置
+            const dist = Math.sqrt((this.destX - this.x) ** 2 + (this.destY - this.y) ** 2);
+            if (dist < 2) {
+                this.settled = true;
+                this.x = this.destX;
+                this.y = this.destY;
+            }
+        }
+        // 到达后保持静止，不再运动
     }
     draw() {
         ctx.fillStyle = this.color;
@@ -370,7 +383,7 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
         const itv = setInterval(() => {
             if(count < 0) { clearInterval(itv); startCelebration(); return; }
             createTextParticles(count.toString()); count--;
-        }, 1000);
+        }, 2000); // 改为2秒，让数字显示更久
     }, 5000);
 });
 
