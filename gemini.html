@@ -492,15 +492,29 @@ window.addEventListener('mousedown', (e) => {
 });
 
 // --- 5. 主循环 ---
-for(let i=0; i<100; i++) stars.push({x:random(0,w), y:random(0,h), o:random(0.2, 1)});
+for(let i=0; i<100; i++) {
+    stars.push({
+        x:random(0,w),
+        y:random(0,h),
+        baseO:random(0.2, 0.8), // 基础透明度
+        blinkSpeed:random(0.02, 0.08), // 眨眼速度
+        blinkOffset:random(0, Math.PI*2) // 眨眼相位偏移
+    });
+}
 
 function loop() {
     // 烟火残影效果
     ctx.fillStyle = 'rgba(2, 0, 16, 0.2)';
     ctx.fillRect(0, 0, w, h);
 
+    // 绘制星星，带眨眼效果
+    const time = Date.now() * 0.001;
     stars.forEach(s => {
-        ctx.fillStyle = `rgba(255,255,255,${s.o})`;
+        // 使用正弦波实现眨眼效果
+        const blink = Math.sin(time * s.blinkSpeed * 50 + s.blinkOffset);
+        const opacity = s.baseO * (0.5 + blink * 0.5); // 在基础透明度的50%-100%之间变化
+
+        ctx.fillStyle = `rgba(255,255,255,${opacity})`;
         ctx.beginPath(); ctx.arc(s.x, s.y, 1, 0, Math.PI*2); ctx.fill();
     });
 
