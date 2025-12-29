@@ -23,16 +23,18 @@
         }
 
         .aurora {
-            position: absolute; width: 200%; height: 100%;
-            top: -50%; left: -50%;
-            background: linear-gradient(45deg, transparent 30%, rgba(0, 255, 128, 0.1) 40%, rgba(0, 200, 255, 0.15) 45%, rgba(128, 0, 255, 0.1) 50%, transparent 60%);
-            animation: aurora-wave 15s ease-in-out infinite;
-            filter: blur(60px); opacity: 0.6;
+            position: absolute; width: 300%; height: 300%;
+            top: -100%; left: -100%;
+            background: linear-gradient(45deg, transparent 20%, rgba(0, 255, 128, 0.08) 30%, rgba(0, 200, 255, 0.12) 40%, rgba(128, 0, 255, 0.08) 50%, rgba(0, 255, 200, 0.1) 60%, transparent 80%);
+            animation: aurora-wave 20s ease-in-out infinite;
+            filter: blur(80px); opacity: 0.7;
         }
 
         @keyframes aurora-wave {
-            0%, 100% { transform: translate(-30%, -30%) rotate(0deg); }
-            50% { transform: translate(30%, 30%) rotate(180deg); }
+            0%, 100% { transform: translate(-40%, -40%) rotate(0deg) scale(1); }
+            25% { transform: translate(30%, -20%) rotate(90deg) scale(1.1); }
+            50% { transform: translate(40%, 40%) rotate(180deg) scale(1); }
+            75% { transform: translate(-20%, 30%) rotate(270deg) scale(1.1); }
         }
 
         canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
@@ -227,36 +229,41 @@ class AuroraBand {
         this.height = height;
         this.color = color;
         this.waves = [];
-        // 对角线移动参数
-        this.angle = random(Math.PI * 0.15, Math.PI * 0.25); // 15-45度角
-        this.driftSpeed = random(0.1, 0.2); // 缓慢平移速度
+        // 对角线移动参数 - 增加移动范围
+        this.angle = random(Math.PI * 0.1, Math.PI * 0.3);
+        this.driftSpeed = random(0.15, 0.25); // 加快平移速度让循环更明显
         this.driftOffset = random(0, 1000);
 
         // 创建多个流动的波浪
-        for (let i = 0; i < 4; i++) {
+        for (let i = 0; i < 5; i++) {
             this.waves.push({
-                amplitude: random(30, 60),
-                frequency: random(0.004, 0.007),
-                speed: random(0.002, 0.004),
+                amplitude: random(40, 80), // 增加振幅
+                frequency: random(0.003, 0.006),
+                speed: random(0.003, 0.005), // 加快波浪速度
                 phase: random(0, Math.PI * 2)
             });
         }
         this.time = random(0, 1000);
         // 更柔和的透明度
-        this.opacity = random(0.025, 0.06);
+        this.opacity = random(0.03, 0.07);
         // 缓慢脉动效果
-        this.pulseSpeed = random(0.001, 0.002);
+        this.pulseSpeed = random(0.0015, 0.0025);
         this.pulseOffset = random(0, Math.PI * 2);
+        // 循环移动范围
+        this.maxDrift = w * 0.8; // 扩大循环范围
     }
 
     update() {
         this.time += 1;
+        // 让极光在大范围内循环移动
+        this.driftX = Math.cos(this.angle) * (this.time * this.driftSpeed * 5 % this.maxDrift);
+        this.driftY = Math.sin(this.angle) * (this.time * this.driftSpeed * 3 % (this.maxDrift * 0.6));
     }
 
     draw() {
-        // 计算对角线平移偏移
-        const driftX = Math.cos(this.angle) * this.time * this.driftSpeed * 5;
-        const driftY = Math.sin(this.angle) * this.time * this.driftSpeed * 3;
+        // 使用更新后的循环移动偏移
+        const driftX = this.driftX;
+        const driftY = this.driftY;
 
         // 计算脉动透明度（更缓慢）
         const pulse = Math.sin(this.time * this.pulseSpeed + this.pulseOffset) * 0.5 + 0.5;
@@ -344,13 +351,13 @@ class AuroraSystem {
             {r: 50, g: 130, b: 130}
         ];
 
-        // 只创建2-3层极光带，减少视觉负担
-        const numBands = Math.floor(random(2, 4));
+        // 创建3-4层极光带，扩大覆盖范围
+        const numBands = Math.floor(random(3, 5));
         for (let i = 0; i < numBands; i++) {
             const color = colorSchemes[Math.floor(random(0, colorSchemes.length))];
-            // 极光位置更靠上，在屏幕顶部10%-35%区域
-            const y = h * 0.05 + i * h * 0.1;
-            const height = random(h * 0.12, h * 0.2);
+            // 极光位置范围扩大：从屏幕顶部到60%区域
+            const y = h * 0.02 + i * h * 0.15;
+            const height = random(h * 0.18, h * 0.3); // 增加高度
             this.bands.push(new AuroraBand(y, height, color));
         }
     }
