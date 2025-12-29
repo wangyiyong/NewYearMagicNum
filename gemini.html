@@ -23,18 +23,17 @@
         }
 
         .aurora {
-            position: absolute; width: 300%; height: 300%;
-            top: -100%; left: -100%;
-            background: linear-gradient(45deg, transparent 20%, rgba(0, 255, 128, 0.08) 30%, rgba(0, 200, 255, 0.12) 40%, rgba(128, 0, 255, 0.08) 50%, rgba(0, 255, 200, 0.1) 60%, transparent 80%);
-            animation: aurora-wave 20s ease-in-out infinite;
-            filter: blur(80px); opacity: 0.7;
+            position: absolute; width: 250%; height: 200%;
+            top: -50%; left: -75%;
+            background: linear-gradient(120deg, transparent 15%, rgba(0, 255, 128, 0.04) 25%, rgba(0, 200, 255, 0.05) 35%, rgba(128, 0, 255, 0.04) 45%, rgba(0, 255, 200, 0.05) 55%, transparent 70%);
+            animation: aurora-wave 30s ease-in-out infinite;
+            filter: blur(120px); opacity: 0.35;
         }
 
         @keyframes aurora-wave {
-            0%, 100% { transform: translate(-40%, -40%) rotate(0deg) scale(1); }
-            25% { transform: translate(30%, -20%) rotate(90deg) scale(1.1); }
-            50% { transform: translate(40%, 40%) rotate(180deg) scale(1); }
-            75% { transform: translate(-20%, 30%) rotate(270deg) scale(1.1); }
+            0%, 100% { transform: translate(-30%, -20%) rotate(-5deg) scale(1); }
+            33% { transform: translate(20%, -30%) rotate(3deg) scale(1.05); }
+            66% { transform: translate(30%, 20%) rotate(-3deg) scale(0.98); }
         }
 
         canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
@@ -229,96 +228,102 @@ class AuroraBand {
         this.height = height;
         this.color = color;
         this.waves = [];
-        // 对角线移动参数 - 增加移动范围
-        this.angle = random(Math.PI * 0.1, Math.PI * 0.3);
-        this.driftSpeed = random(0.15, 0.25); // 加快平移速度让循环更明显
-        this.driftOffset = random(0, 1000);
+        // 缓慢的垂直摆动参数
+        this.verticalDrift = random(0.0005, 0.001); // 很慢的垂直漂移
+        this.verticalOffset = random(0, Math.PI * 2);
+        // 水平滑移参数
+        this.horizontalSpeed = random(0.2, 0.4);
+        this.horizontalPhase = random(0, Math.PI * 2);
 
-        // 创建多个流动的波浪
-        for (let i = 0; i < 5; i++) {
+        // 创建多个叠加的波浪，形成"窗帘"效果
+        for (let i = 0; i < 6; i++) {
             this.waves.push({
-                amplitude: random(40, 80), // 增加振幅
-                frequency: random(0.003, 0.006),
-                speed: random(0.003, 0.005), // 加快波浪速度
-                phase: random(0, Math.PI * 2)
+                amplitude: random(20, 50), // 减小振幅让形状更柔和
+                frequency: random(0.002, 0.004), // 降低频率，波浪更宽
+                speed: random(0.001, 0.002), // 更慢的速度
+                phase: random(0, Math.PI * 2),
+                verticalScale: random(0.3, 0.8) // 垂直方向的影响程度
             });
         }
         this.time = random(0, 1000);
-        // 更柔和的透明度
-        this.opacity = random(0.03, 0.07);
+        // 更柔和的透明度，降低整体亮度
+        this.opacity = random(0.025, 0.05);
         // 缓慢脉动效果
-        this.pulseSpeed = random(0.0015, 0.0025);
+        this.pulseSpeed = random(0.0006, 0.0012);
         this.pulseOffset = random(0, Math.PI * 2);
-        // 循环移动范围
-        this.maxDrift = w * 0.8; // 扩大循环范围
     }
 
     update() {
         this.time += 1;
-        // 让极光在大范围内循环移动
-        this.driftX = Math.cos(this.angle) * (this.time * this.driftSpeed * 5 % this.maxDrift);
-        this.driftY = Math.sin(this.angle) * (this.time * this.driftSpeed * 3 % (this.maxDrift * 0.6));
+        // 计算平滑的水平漂移（使用正弦波而不是取模，避免跳跃）
+        this.driftX = Math.sin(this.time * this.horizontalSpeed * 0.01 + this.horizontalPhase) * w * 0.15;
+        // 计算平滑的垂直漂移
+        this.driftY = Math.sin(this.time * this.verticalDrift + this.verticalOffset) * h * 0.05;
     }
 
     draw() {
-        // 使用更新后的循环移动偏移
         const driftX = this.driftX;
         const driftY = this.driftY;
 
-        // 计算脉动透明度（更缓慢）
+        // 计算脉动透明度，降低最大亮度
         const pulse = Math.sin(this.time * this.pulseSpeed + this.pulseOffset) * 0.5 + 0.5;
-        const currentOpacity = this.opacity * (0.6 + pulse * 0.4);
+        const currentOpacity = this.opacity * (0.5 + pulse * 0.3);
 
-        // 绘制双层波浪，更柔和
-        for (let layer = 0; layer < 2; layer++) {
+        // 绘制三层波浪，形成立体感
+        for (let layer = 0; layer < 3; layer++) {
             const layerOpacity = currentOpacity * (1 - layer * 0.3);
-            const layerDrift = layer * 10;
+            const layerDriftX = driftX + layer * 15;
+            const layerDriftY = driftY + layer * 8;
 
-            // 创建对角线渐变
+            // 创建平滑的垂直渐变（从上到下淡出）- 更柔和的过渡
             const gradient = ctx.createLinearGradient(
-                driftX - 100, this.baseY + driftY - 50,
-                driftX + w + 100, this.baseY + this.height + driftY + 50
+                0, this.baseY + layerDriftY - this.height * 0.4,
+                0, this.baseY + this.height + layerDriftY + this.height * 0.4
             );
+            // 更长的淡入淡出区域，更好地融入背景
             gradient.addColorStop(0, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`);
-            gradient.addColorStop(0.35, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.3})`);
-            gradient.addColorStop(0.5, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.7})`);
-            gradient.addColorStop(0.65, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.3})`);
+            gradient.addColorStop(0.25, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.25})`);
+            gradient.addColorStop(0.5, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.6})`);
+            gradient.addColorStop(0.75, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, ${layerOpacity * 0.25})`);
             gradient.addColorStop(1, `rgba(${this.color.r}, ${this.color.g}, ${this.color.b}, 0)`);
 
             ctx.fillStyle = gradient;
             ctx.beginPath();
 
-            // 上边缘 - 对角线流动的波浪曲线
-            for (let x = -50; x <= w + 50; x += 10) {
+            // 上边缘 - 多重叠加的平滑曲线
+            for (let x = -100; x <= w + 100; x += 8) {
                 let yOffset = 0;
                 this.waves.forEach((wave, i) => {
-                    const layerMod = (layer + i) % 2 === 0 ? 1 : -1;
-                    // 结合对角线偏移和波浪运动
-                    const waveX = x + driftX + layerDrift;
+                    const layerMod = Math.sin((layer + i) * 0.7); // 平滑的层级差异
+                    const waveX = x + layerDriftX + i * 20;
+                    // 组合多个正弦波，创造自然流动效果
                     yOffset += Math.sin(
                         waveX * wave.frequency +
                         this.time * wave.speed +
-                        wave.phase
-                    ) * wave.amplitude * layerMod;
+                        wave.phase + layer
+                    ) * wave.amplitude * wave.verticalScale * layerMod;
                 });
-                const y = this.baseY + driftY + yOffset;
-                if (x === -50) ctx.moveTo(x, y);
+                // 添加平滑的整体弯曲
+                const curve = Math.sin((x / w) * Math.PI) * this.height * 0.15;
+                const y = this.baseY + layerDriftY + yOffset + curve;
+                if (x === -100) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
 
-            // 下边缘（不同的波浪曲线）
-            for (let x = w + 50; x >= -50; x -= 10) {
+            // 下边缘
+            for (let x = w + 100; x >= -100; x -= 8) {
                 let yOffset = 0;
                 this.waves.forEach((wave, i) => {
-                    const layerMod = (layer + i + 1) % 2 === 0 ? 1 : -1;
-                    const waveX = x + driftX + layerDrift;
+                    const layerMod = Math.cos((layer + i) * 0.7);
+                    const waveX = x + layerDriftX + i * 20;
                     yOffset += Math.sin(
-                        waveX * wave.frequency * 0.85 +
-                        this.time * wave.speed * 1.15 +
-                        wave.phase + Math.PI
-                    ) * wave.amplitude * 0.65 * layerMod;
+                        waveX * wave.frequency * 0.9 +
+                        this.time * wave.speed * 1.1 +
+                        wave.phase + layer + Math.PI * 0.5
+                    ) * wave.amplitude * wave.verticalScale * 0.7 * layerMod;
                 });
-                const y = this.baseY + this.height + driftY + yOffset;
+                const curve = Math.sin((x / w) * Math.PI) * this.height * 0.1;
+                const y = this.baseY + this.height + layerDriftY + yOffset + curve;
                 ctx.lineTo(x, y);
             }
 
@@ -351,13 +356,13 @@ class AuroraSystem {
             {r: 50, g: 130, b: 130}
         ];
 
-        // 创建3-4层极光带，扩大覆盖范围
-        const numBands = Math.floor(random(3, 5));
+        // 创建3层极光带，均匀分布在垂直方向
+        const numBands = 3;
         for (let i = 0; i < numBands; i++) {
             const color = colorSchemes[Math.floor(random(0, colorSchemes.length))];
-            // 极光位置范围扩大：从屏幕顶部到60%区域
-            const y = h * 0.02 + i * h * 0.15;
-            const height = random(h * 0.18, h * 0.3); // 增加高度
+            // 极光均匀分布：覆盖整个屏幕高度
+            const y = h * 0.15 + i * h * 0.25;
+            const height = random(h * 0.15, h * 0.22);
             this.bands.push(new AuroraBand(y, height, color));
         }
     }
