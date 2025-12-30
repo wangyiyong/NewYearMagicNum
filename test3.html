@@ -16,9 +16,10 @@
 
         canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
         
-        /* 手势预览窗口 - 右下角 */
-        #gesture-canvas {
-            position: fixed; bottom: 20px; right: 20px;
+        /* 手势预览窗口 - 右上角 */
+        canvas#gesture-canvas {
+            position: fixed !important; top: 20px !important; right: 20px !important;
+            left: auto !important;
             width: 200px; height: 150px;
             border: 2px solid rgba(255, 215, 0, 0.5); border-radius: 15px;
             z-index: 1000; transform: scaleX(-1);
