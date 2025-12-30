@@ -244,7 +244,7 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
 });
 
 function startCelebration() {
-    document.getElementById('instruction').innerText = "🧧 伸手尝试抓取 (握拳显示/张开消失)";
+    // 开始庆祝阶段，手势交互已启用
 }
 
 function drawAurora() {
@@ -277,8 +277,46 @@ function loop() {
         fireworks.forEach((fw,i)=>{ fw.update(); fw.draw(); if(fw.parts.length===0 && fw.exploded) fireworks.splice(i,1); });
         
         // 装饰性红包雨
-        if(Math.random()<0.03) envelopes.push({x:random(0,w), y:-20});
-        envelopes.forEach((e,i)=>{ e.y+=4; ctx.fillStyle="#ff4757"; ctx.fillRect(e.x,e.y,20,30); if(e.y>h) envelopes.splice(i,1); });
+        if(Math.random()<0.03) envelopes.push({x:random(0,w), y:-20, rotation:random(-0.3,0.3)});
+        envelopes.forEach((e,i)=>{
+            e.y+=1.5; e.rotation+=0.01;
+            if(e.y>h) envelopes.splice(i,1);
+
+            const packetW=50, packetH=65;
+            ctx.save();
+            ctx.translate(e.x+packetW/2, e.y+packetH/2);
+            ctx.rotate(e.rotation);
+
+            // 红包主体 - 渐变红色
+            const grad = ctx.createLinearGradient(-packetW/2, -packetH/2, packetW/2, packetH/2);
+            grad.addColorStop(0, '#ff6b6b');
+            grad.addColorStop(0.5, '#ee5a5a');
+            grad.addColorStop(1, '#c0392b');
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.roundRect(-packetW/2, -packetH/2, packetW, packetH, 8);
+            ctx.fill();
+
+            // 金色边框
+            ctx.strokeStyle = '#f4d03f';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // 金色装饰圆圈
+            ctx.beginPath();
+            ctx.arc(0, -5, 18, 0, Math.PI*2);
+            ctx.fillStyle = '#f4d03f';
+            ctx.fill();
+
+            // 福字
+            ctx.fillStyle = '#c0392b';
+            ctx.font = 'bold 20px "Noto Serif SC", serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('福', 0, -4);
+
+            ctx.restore();
+        });
     }
     requestAnimationFrame(loop);
 }
