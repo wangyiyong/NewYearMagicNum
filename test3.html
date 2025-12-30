@@ -62,9 +62,7 @@
         }
         .card-modal.show { transform: translate(-50%, -50%) scale(1); }
         .card-img { width: 100%; border-radius: 15px; margin-bottom: 15px; max-height: 200px; object-fit: cover; }
-
-        .instruction { position: absolute; bottom: 40px; color: #fff; background: rgba(0,0,0,0.7); padding: 12px 25px; border-radius: 30px; font-size: 0.9rem; border: 1px solid #ffd700; }
-        
+                
         #hidden-video { position: fixed; width: 1px; height: 1px; opacity: 0; }
     </style>
 </head>
@@ -90,8 +88,6 @@
             <p id="modalWish" style="color: #d63031; font-weight: bold; line-height: 1.5;"></p>
             <p style="font-size: 0.8rem; color: #999;">松开手掌以关闭</p>
         </div>
-
-        <div class="instruction" id="instruction"></div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
@@ -181,13 +177,15 @@ function initHands() {
             // 握拳检测算法
             const isFistNow = lm[8].y > lm[6].y && lm[12].y > lm[10].y && lm[16].y > lm[14].y && lm[20].y > lm[18].y;
 
-            // 状态机判断：
-            if (isFistNow && !wasFist) {
-                // 触发“抓取”动作：手掌 -> 拳头
-                openCard();
-            } else if (!isFistNow && wasFist) {
-                // 触发“放开”动作：拳头 -> 手掌
-                closeCard();
+            // 状态机判断（仅在第二阶段响应）：
+            if (currentStage >= 2) {
+                if (isFistNow && !wasFist) {
+                    // 触发"抓取"动作：手掌 -> 拳头
+                    openCard();
+                } else if (!isFistNow && wasFist) {
+                    // 触发"放开"动作：拳头 -> 手掌
+                    closeCard();
+                }
             }
             
             wasFist = isFistNow; // 更新上一帧状态
@@ -246,7 +244,6 @@ document.getElementById('file-input').addEventListener('change', async (e) => {
 
 function startCelebration() {
     document.getElementById('instruction').innerText = "🧧 伸手尝试抓取 (握拳显示/张开消失)";
-    initHands();
 }
 
 function drawAurora() {
@@ -284,6 +281,8 @@ function loop() {
     }
     requestAnimationFrame(loop);
 }
+// 第一阶段就初始化相机获取权限
+initHands();
 loop();
 </script>
 </body>
