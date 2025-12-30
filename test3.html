@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>2026 跨年手势交互全特效版</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@800&family=Noto+Serif+SC:wght@700&display=swap');
+
+        body, html {
+            margin: 0; padding: 0;
+            width: 100%; height: 100%;
+            overflow: hidden; background: #010212;
+            font-family: 'Montserrat', 'Noto Serif SC', sans-serif;
+        }
+
+        canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; }
+        
+        /* 手势预览窗口 - 右下角 */
+        #gesture-canvas {
+            position: fixed; bottom: 20px; right: 20px;
+            width: 200px; height: 150px;
+            border: 2px solid rgba(255, 215, 0, 0.5); border-radius: 15px;
+            z-index: 1000; transform: scaleX(-1);
+            background: rgba(0,0,0,0.4); display: none;
+        }
+
+        #ui-layer {
+            position: absolute; top: 0; left: 0;
+            width: 100%; height: 100%; z-index: 10;
+            display: flex; justify-content: center; align-items: center; flex-direction: column;
+        }
+
+        .camera-container { text-align: center; z-index: 20; }
+        .polaroid-cam {
+            width: 160px; height: 140px; background: #fff; border-radius: 20px;
+            box-shadow: 0 0 40px rgba(255,215,0, 0.3); display: flex; justify-content: center; align-items: center;
+            cursor: pointer; transition: transform 0.3s;
+        }
+        .lens { width: 80px; height: 80px; background: #1a1a1a; border-radius: 50%; border: 5px solid #ddd; }
+        
+        .memory-title {
+            color: #fff; font-size: 2.2rem; margin-bottom: 25px;
+            background: linear-gradient(135deg, #ffd700, #ff69b4); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+
+        .polaroid-photos { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 25px; max-width: 600px; }
+        .polaroid-photo {
+            width: 90px; background: white; padding: 6px 6px 18px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.4); transform: scale(0);
+            transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .polaroid-photo img { width: 100%; height: 75px; object-fit: cover; }
+
+        /* 红包卡片模态框 */
+        .card-modal {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+            width: 280px; background: white; border-radius: 25px; padding: 25px;
+            text-align: center; z-index: 200; border: 4px solid #ffd700;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
+        }
+        .card-modal.show { transform: translate(-50%, -50%) scale(1); }
+        .card-img { width: 100%; border-radius: 15px; margin-bottom: 15px; max-height: 200px; object-fit: cover; }
+
+        .instruction { position: absolute; bottom: 40px; color: #fff; background: rgba(0,0,0,0.7); padding: 12px 25px; border-radius: 30px; font-size: 0.9rem; border: 1px solid #ffd700; }
+        
+        #hidden-video { position: fixed; width: 1px; height: 1px; opacity: 0; }
+    </style>
+</head>
+<body>
+
+    <canvas id="mainCanvas"></canvas>
+    <canvas id="gesture-canvas"></canvas>
+    <video id="hidden-video" autoplay playsinline></video>
+
+    <div id="ui-layer">
+        <div class="camera-container" id="stage1">
+            <h1 class="memory-title">✨ 2025·记忆相机 ✨</h1>
+            <label for="file-input">
+                <div class="polaroid-cam"><div class="lens"></div></div>
+            </label>
+            <p style="color: #eee; margin-top: 15px;">点击快门上传 3 张以上照片</p>
+            <input type="file" id="file-input" multiple accept="image/*" style="display:none">
+            <div class="polaroid-photos" id="polaroidPhotos"></div>
+        </div>
+
+        <div class="card-modal" id="cardModal">
+            <img src="" class="card-img" id="modalImg">
+            <p id="modalWish" style="color: #d63031; font-weight: bold; line-height: 1.5;"></p>
+            <p style="font-size: 0.8rem; color: #999;">松开手掌以关闭</p>
+        </div>
+
+        <div class="instruction" id="instruction"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+
+<script>
+/**
+ * 2026 跨年手势识别 - 抓取/放开交互版
+ */
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+const gestureCanvas = document.getElementById('gesture-canvas');
+const gCtx = gestureCanvas.getContext('2d');
+
+let w, h, currentStage = 0, userPhotos = [];
+let stars = [], meteors = [], textParticles = [], fireworks = [], envelopes = [];
+let wasFist = false; // 记录上一帧是否为握拳状态
+
+function resize() {
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    gestureCanvas.width = 320;
+    gestureCanvas.height = 240;
+}
+window.addEventListener('resize', resize);
+resize();
+
+const random = (min, max) => Math.random() * (max - min) + min;
+
+// --- 背景渲染 (星空、流星、极光) ---
+class Star {
+    constructor() { this.x = Math.random()*w; this.y = Math.random()*h; this.size = random(0.5, 2); this.alpha = Math.random(); this.v = random(0.01, 0.03); }
+    draw() { this.alpha += this.v; if(this.alpha>1 || this.alpha<0) this.v*=-1; ctx.fillStyle=`rgba(255,255,255,${Math.abs(this.alpha)})`; ctx.beginPath(); ctx.arc(this.x,this.y,this.size,0,Math.PI*2); ctx.fill(); }
+}
+
+class Meteor {
+    constructor() { this.reset(); }
+    reset() { this.x=random(w*0.3,w); this.y=random(0,h*0.3); this.len=random(80,150); this.v=random(12,20); this.a=1; }
+    draw() {
+        this.x-=this.v; this.y+=this.v*0.5; this.a-=0.02;
+        ctx.strokeStyle=`rgba(255,255,255,${this.a})`; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(this.x,this.y); ctx.lineTo(this.x+this.len,this.y-this.len*0.5); ctx.stroke();
+    }
+}
+
+// 初始化背景
+for(let i=0; i<100; i++) stars.push(new Star());
+
+// --- 特效系统 ---
+class Firework {
+    constructor() {
+        this.x = random(w*0.1, w*0.9); this.y = h; this.ty = random(h*0.1, h*0.5);
+        this.hue = random(0, 360); this.exploded = false; this.parts = [];
+    }
+    update() {
+        if(!this.exploded) { this.y-=14; if(this.y<=this.ty) this.explode(); }
+        else { this.parts.forEach((p,i)=>{ p.x+=p.vx; p.y+=p.vy; p.vy+=0.06; p.a-=0.02; if(p.a<=0) this.parts.splice(i,1); }); }
+    }
+    explode() {
+        this.exploded = true;
+        for(let i=0; i<50; i++) {
+            const ang=Math.random()*Math.PI*2, s=random(1,5);
+            this.parts.push({x:this.x, y:this.y, vx:Math.cos(ang)*s, vy:Math.sin(ang)*s, a:1});
+        }
+    }
+    draw() {
+        if(!this.exploded) { ctx.fillStyle=`hsl(${this.hue},100%,60%)`; ctx.beginPath(); ctx.arc(this.x,this.y,3,0,Math.PI*2); ctx.fill(); }
+        else { this.parts.forEach(p=>{ ctx.fillStyle=`hsla(${this.hue},100%,60%,${p.a})`; ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2); ctx.fill(); }); }
+    }
+}
+
+// --- 手势交互核心 ---
+function initHands() {
+    const videoElement = document.getElementById('hidden-video');
+    const hands = new Hands({ locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}` });
+    hands.setOptions({ maxNumHands: 1, modelComplexity: 1, minDetectionConfidence: 0.6 });
+
+    hands.onResults((results) => {
+        gCtx.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
+        gCtx.drawImage(results.image, 0, 0, gestureCanvas.width, gestureCanvas.height);
+
+        if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+            const lm = results.multiHandLandmarks[0];
+            drawConnectors(gCtx, lm, HAND_CONNECTIONS, {color: '#00FF00', lineWidth: 4});
+            drawLandmarks(gCtx, lm, {color: '#FF0000', radius: 2});
+
+            // 握拳检测算法
+            const isFistNow = lm[8].y > lm[6].y && lm[12].y > lm[10].y && lm[16].y > lm[14].y && lm[20].y > lm[18].y;
+
+            // 状态机判断：
+            if (isFistNow && !wasFist) {
+                // 触发“抓取”动作：手掌 -> 拳头
+                openCard();
+            } else if (!isFistNow && wasFist) {
+                // 触发“放开”动作：拳头 -> 手掌
+                closeCard();
+            }
+            
+            wasFist = isFistNow; // 更新上一帧状态
+        }
+    });
+
+    new Camera(videoElement, { onFrame: async () => { await hands.send({image: videoElement}); }, width: 320, height: 240 }).start();
+    gestureCanvas.style.display = 'block';
+}
+
+function openCard() {
+    const modal = document.getElementById('cardModal');
+    if(modal.classList.contains('show')) return;
+    const wishes = ["2026 握住好运！", "捕捉到一个新年惊喜！", "愿你新的一年，\n万事皆在掌控！"];
+    document.getElementById('modalImg').src = userPhotos[Math.floor(random(0, userPhotos.length))];
+    document.getElementById('modalWish').innerText = wishes[Math.floor(random(0, wishes.length))];
+    modal.classList.add('show');
+}
+
+function closeCard() {
+    document.getElementById('cardModal').classList.remove('show');
+}
+
+// --- 动画循环 ---
+function createTextParticles(text) {
+    const tCanvas = document.createElement('canvas'); const tCtx = tCanvas.getContext('2d');
+    tCanvas.width = w; tCanvas.height = h;
+    tCtx.font = `bold ${Math.min(w/3, 280)}px Arial`; tCtx.textAlign = 'center'; tCtx.textBaseline = 'middle';
+    tCtx.fillText(text, w/2, h/2);
+    const data = tCtx.getImageData(0,0,w,h).data;
+    textParticles = [];
+    for(let y=0; y<h; y+=8) {
+        for(let x=0; x<w; x+=8) {
+            if(data[(y*w+x)*4+3] > 128) textParticles.push({x:Math.random()*w, y:Math.random()*h, dx:x, dy:y});
+        }
+    }
+}
+
+document.getElementById('file-input').addEventListener('change', async (e) => {
+    const files = Array.from(e.target.files);
+    if(files.length < 3) return alert("请至少上传3张图片");
+    userPhotos = await Promise.all(files.map(f => new Promise(res => {
+        const r = new FileReader(); r.onload=ev=>res(ev.target.result); r.readAsDataURL(f);
+    })));
+    document.getElementById('polaroidPhotos').innerHTML = userPhotos.map(src => `<div class="polaroid-photo"><img src="${src}"></div>`).join('');
+    setTimeout(()=>document.querySelectorAll('.polaroid-photo').forEach(el=>el.style.transform=`scale(1) rotate(${random(-10,10)}deg)`),100);
+    setTimeout(() => {
+        document.getElementById('stage1').style.display='none';
+        currentStage=1; let count=5;
+        const itv = setInterval(()=>{
+            if(count<0){ clearInterval(itv); currentStage=2; startCelebration(); return; }
+            createTextParticles(count===0?"2026":count.toString()); count--;
+        },1000);
+    }, 3000);
+});
+
+function startCelebration() {
+    document.getElementById('instruction').innerText = "🧧 伸手尝试抓取 (握拳显示/张开消失)";
+    initHands();
+}
+
+function drawAurora() {
+    ctx.save();
+    let grad = ctx.createLinearGradient(0, h, 0, h*0.4);
+    grad.addColorStop(0, 'rgba(0, 255, 150, 0.2)');
+    grad.addColorStop(1, 'transparent');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    for(let x=0; x<=w; x+=20) {
+        let y = h - 100 + Math.sin(x*0.005 + Date.now()*0.001)*50;
+        ctx.lineTo(x, y);
+    }
+    ctx.lineTo(w, h); ctx.fill(); ctx.restore();
+}
+
+function loop() {
+    ctx.fillStyle = 'rgba(1, 2, 18, 0.2)'; ctx.fillRect(0,0,w,h);
+    
+    stars.forEach(s=>s.draw());
+    if(Math.random()<0.02) meteors.push(new Meteor());
+    meteors.forEach((m,i)=>{ m.draw(); if(m.a<=0) meteors.splice(i,1); });
+    drawAurora();
+
+    textParticles.forEach(p=>{ p.x+=(p.dx-p.x)*0.1; p.y+=(p.dy-p.y)*0.1; ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2); ctx.fill(); });
+
+    if(currentStage>=2){
+        if(Math.random()<0.05) fireworks.push(new Firework());
+        fireworks.forEach((fw,i)=>{ fw.update(); fw.draw(); if(fw.parts.length===0 && fw.exploded) fireworks.splice(i,1); });
+        
+        // 装饰性红包雨
+        if(Math.random()<0.03) envelopes.push({x:random(0,w), y:-20});
+        envelopes.forEach((e,i)=>{ e.y+=4; ctx.fillStyle="#ff4757"; ctx.fillRect(e.x,e.y,20,30); if(e.y>h) envelopes.splice(i,1); });
+    }
+    requestAnimationFrame(loop);
+}
+loop();
+</script>
+</body>
+</html>
