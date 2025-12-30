@@ -200,7 +200,59 @@ function initHands() {
 function openCard() {
     const modal = document.getElementById('cardModal');
     if(modal.classList.contains('show')) return;
-    const wishes = ["2026 握住好运！", "捕捉到一个新年惊喜！", "愿你新的一年，\n万事皆在掌控！"];
+    const wishes = [
+        "2025 和自己和解，\n允许一切发生",
+        "人生是旷野，不是轨道\n去探索吧！",
+        "愿你被这个世界温柔以待",
+        "所有的运气，都藏在坚持里\n2025继续加油！",
+        "去爱具体的生活，\n而不是抽象的世界",
+        "愿你得偿所愿，万事胜意\n新年快乐！",
+        "保持热爱，奔赴山海\n2025会更好的",
+        "一岁一礼，一寸欢喜\n祝你快乐！",
+        "愿你眼里有光，心中有爱\n2025万事顺意",
+        "凡是过往，皆为序章\n2025重新开始",
+        "愿你不负韶华，\n以梦为马，随处可栖",
+        "生活明朗，万物可爱\n2025加油！",
+        "愿世间美好与你环环相扣",
+        "新的一年，愿你所求皆如愿\n所行化坦途",
+        "愿你历尽千帆，\n归来仍是少年",
+        "星光不问赶路人，\n时光不负有心人",
+        "愿你单枪匹马，\n也能活成一支队伍",
+        "2025，愿你成为\n自己的太阳，无需凭借谁的光",
+        "愿你的生活，\n常有欢笑，偶有感动",
+        "前路浩浩荡荡，\n万物皆可期待",
+        "愿你拥有长在\n骨子里的善良和刻在命里的坚强",
+        "新的一年，\n愿你眼里写满故事，脸上不见风霜",
+        "愿你的快乐，\n像肚子上的小肉肉一样，怎么减都减不掉",
+        "2025，愿你\n想不开的时候，就去吃顿好的",
+        "愿你遍历山河，\n觉得人间值得",
+        "生活原本沉闷，\n但跑起来就有风",
+        "愿你在这个冬天，\n也能被温暖的太阳拥抱",
+        "新的一年，\n愿你所有的遗憾都是惊喜的铺垫",
+        "愿你的努力，\n都能在这个世界开出花来",
+        "2025，愿你\n有钱有闲，有人爱",
+        "愿你所有的深情\n都不被辜负",
+        "愿你的世界里，\n每一天都是闪闪发光的",
+        "新的一年，\n愿你活得像风一样自由",
+        "愿你在这个世界，\n活成自己喜欢的模样",
+        "愿你的2025，\n有书有茶有酒，有诗有远方",
+        "愿你所有的\n怦然心动，都能两情相悦",
+        "生活原本就很可爱，\n2025继续去爱吧",
+        "愿你心中有梦，\n脚下有路，眼里有光",
+        "新的一年，\n愿你的快乐不打烊",
+        "愿你成为\n自己想要成为的一切",
+        "愿你的2025，\n充满惊喜和奇迹",
+        "愿你每天都是\n限量版的快乐",
+        "愿你的温柔，\n被这个世界温柔以待",
+        "新的一年，\n愿你做最好的自己",
+        "愿你眼里有星辰大海，\n心中有繁花似锦",
+        "愿你所有的坚持，\n都能换来一次如愿以偿",
+        "生活明朗，万物可爱\n2025继续可爱下去",
+        "愿你此生尽兴，\n赤诚善良",
+        "愿你的2025，\n有盔甲也有软肋",
+        "愿你所有的\n等待都不被辜负",
+        "新的一年，\n愿你如星璀璨，如风自由"
+    ];
     document.getElementById('modalImg').src = userPhotos[Math.floor(random(0, userPhotos.length))];
     document.getElementById('modalWish').innerText = wishes[Math.floor(random(0, wishes.length))];
     modal.classList.add('show');
@@ -273,7 +325,7 @@ function loop() {
     textParticles.forEach(p=>{ p.x+=(p.dx-p.x)*0.1; p.y+=(p.dy-p.y)*0.1; ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2); ctx.fill(); });
 
     if(currentStage>=2){
-        if(Math.random()<0.05) fireworks.push(new Firework());
+        if(Math.random()<0.12) fireworks.push(new Firework());
         fireworks.forEach((fw,i)=>{ fw.update(); fw.draw(); if(fw.parts.length===0 && fw.exploded) fireworks.splice(i,1); });
         
         // 装饰性红包雨
