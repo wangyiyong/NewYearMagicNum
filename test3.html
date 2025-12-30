@@ -267,13 +267,22 @@ function closeCard() {
 function createTextParticles(text) {
     const tCanvas = document.createElement('canvas'); const tCtx = tCanvas.getContext('2d');
     tCanvas.width = w; tCanvas.height = h;
-    tCtx.font = `bold ${Math.min(w/3, 280)}px Arial`; tCtx.textAlign = 'center'; tCtx.textBaseline = 'middle';
+    tCtx.font = `bold ${Math.min(w/2.2, 400)}px Arial`; tCtx.textAlign = 'center'; tCtx.textBaseline = 'middle';
     tCtx.fillText(text, w/2, h/2);
     const data = tCtx.getImageData(0,0,w,h).data;
     textParticles = [];
-    for(let y=0; y<h; y+=8) {
-        for(let x=0; x<w; x+=8) {
-            if(data[(y*w+x)*4+3] > 128) textParticles.push({x:Math.random()*w, y:Math.random()*h, dx:x, dy:y});
+    const colors = ['#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ff6fff', '#00d9ff', '#ff9f43', '#ee5a5a'];
+    for(let y=0; y<h; y+=6) {
+        for(let x=0; x<w; x+=6) {
+            if(data[(y*w+x)*4+3] > 128) {
+                textParticles.push({
+                    x:Math.random()*w,
+                    y:Math.random()*h,
+                    dx:x,
+                    dy:y,
+                    color:colors[Math.floor(Math.random()*colors.length)]
+                });
+            }
         }
     }
 }
@@ -323,7 +332,7 @@ function loop() {
     meteors.forEach((m,i)=>{ m.draw(); if(m.a<=0) meteors.splice(i,1); });
     drawAurora();
 
-    textParticles.forEach(p=>{ p.x+=(p.dx-p.x)*0.1; p.y+=(p.dy-p.y)*0.1; ctx.fillStyle="#fff"; ctx.beginPath(); ctx.arc(p.x,p.y,1.5,0,Math.PI*2); ctx.fill(); });
+    textParticles.forEach(p=>{ p.x+=(p.dx-p.x)*0.1; p.y+=(p.dy-p.y)*0.1; ctx.fillStyle=p.color; ctx.beginPath(); ctx.arc(p.x,p.y,2,0,Math.PI*2); ctx.fill(); });
 
     if(currentStage>=2){
         if(Math.random()<0.12) fireworks.push(new Firework());
