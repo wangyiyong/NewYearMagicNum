@@ -62,7 +62,7 @@
             box-shadow: 0 0 50px rgba(255, 215, 0, 0.2);
         }
         .card-modal.show { transform: translate(-50%, -50%) scale(1); }
-        .card-img { width: 100%; border-radius: 15px; margin-bottom: 15px; max-height: 200px; object-fit: cover; }
+        .card-img { width: 100%; border-radius: 15px; margin-bottom: 15px; max-height: 350px; object-fit: contain; }
                 
         #hidden-video { position: fixed; width: 1px; height: 1px; opacity: 0; }
     </style>
@@ -279,7 +279,7 @@ function loop() {
         // 装饰性红包雨
         if(Math.random()<0.03) envelopes.push({x:random(0,w), y:-20, rotation:random(-0.3,0.3)});
         envelopes.forEach((e,i)=>{
-            e.y+=1.5; e.rotation+=0.01;
+            e.y+=1.5;
             if(e.y>h) envelopes.splice(i,1);
 
             const packetW=50, packetH=65;
