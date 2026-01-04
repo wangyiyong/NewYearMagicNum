@@ -4,7 +4,9 @@
 
 ## 🎬 演示视频
 
-https://github.com/wangyiyong/NewYearMagicNum/releases/download/demo-video/demo.mp4
+<video src="https://github.com/wangyiyong/NewYearMagicNum/releases/download/demo-video/demo.mp4" width="800" controls></video>
+
+*如无法播放，请[点击下载](https://github.com/wangyiyong/NewYearMagicNum/releases/download/demo-video/demo.mp4)*
 
 ## ✨ 功能特性
 
