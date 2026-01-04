@@ -2,6 +2,10 @@
 
 一个充满仪式感的跨年倒计时网页，结合个人回忆照片、震撼的粒子特效和手势交互，打造浪漫、唯美、酷炫的跨年体验。
 
+## 🎬 演示视频
+
+https://github.com/wangyiyong/NewYearMagicNum/releases/download/demo-video/demo.mp4
+
 ## ✨ 功能特性
 
 ### 📸 阶段一：记忆相机
