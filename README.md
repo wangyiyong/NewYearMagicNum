@@ -4,9 +4,11 @@
 
 ## 🎬 演示视频
 
-<video src="https://github.com/wangyiyong/NewYearMagicNum/releases/download/demo-video/demo.mp4" width="800" controls></video>
+[![演示视频](https://img.shields.io/badge/🎬-观看演示-brightgreen)](https://github.com/wangyiyong/NewYearMagicNum/releases/download/demo-video/demo.mp4)
 
-*如无法播放，请[点击下载](https://github.com/wangyiyong/NewYearMagicNum/releases/download/demo-video/demo.mp4)*
+**[点击观看完整演示视频](https://github.com/wangyiyong/NewYearMagicNum/releases/download/demo-video/demo.mp4)** 🎆
+
+*或在 Releases 页面下载：[demo-video](https://github.com/wangyiyong/NewYearMagicNum/releases/tag/demo-video)*
 
 ## ✨ 功能特性
 
